@@ -1,8 +1,7 @@
 package cmd
 
 import (
-	"fmt"
-
+	"github.com/microbuilder/linaroca/httpserver"
 	"github.com/spf13/cobra"
 )
 
@@ -13,7 +12,7 @@ var startCmd = &cobra.Command{
 	Long: `Starts the HTTPS server, and enables access to CA functions via
 a REST API.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Starting HTTPS server on ...")
+		httpserver.Start()
 	},
 }
 
