@@ -5,16 +5,17 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 )
 
-func Start() {
+func Start(port int16) {
 	// Make sure the server key and certificate exist
 	if !fileExists("SERVER.key") || !fileExists("SERVER.crt") {
 		log.Fatal("Server certificate and key not found. See README.md.")
 	}
-	fmt.Println("Starting HTTPS server on port https://localhost:443")
+	fmt.Println("Starting HTTPS server on port https://localhost:" + strconv.Itoa(int(port)))
 	http.HandleFunc("/", HelloServer)
-	err := http.ListenAndServeTLS(":443", "SERVER.crt", "SERVER.key", nil)
+	err := http.ListenAndServeTLS(":"+strconv.Itoa(int(port)), "SERVER.crt", "SERVER.key", nil)
 	if err != nil {
 		log.Fatal("ListenAndServeTLS: ", err)
 	}
