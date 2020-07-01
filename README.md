@@ -50,25 +50,34 @@ This will serve web pages from root, and handle REST API requests from the
 
 API based loosely on [CMP (RFC4210)](https://tools.ietf.org/html/rfc4210).
 
-#### Initialisation Request: `/api/v1/ir` **GET**
+#### Initialisation Request: `/api/v1/ir` **POST**
 
 This endpoint is used to register new (previously unregistered) devices into
 the management system. Initialisation must occur before certificates can be
 requested.
+
+A unique serial number must be provided for the device, and any certificates
+issued for this device will be associated with this device serial number.
 
 #### Certification Request: `/api/v1/cr` **POST**
 
 This endpoint is used for certificate requests from existing devices who
 wish to obtain new certificates.
 
+The CA will assign and record a unique serial number for this certificate,
+which can be used later to check the certificate status via the `cs` endpoint.
+
 #### Certification Request from PKCS10: `/api/v1/p10cr` **POST**
 
 This endpoint is used for certificate requests from existing devices who
 wish to obtain new certificates, providing a PKCS#10 CSR file for the request.
 
-#### Certificate Status Request: `api/v1/cs` **GET**
+The CA will assign and record a unique serial number for this certificate,
+which can be used later to check the certificate status via the `cs` endpoint.
 
-Requests the status of the specified certificate.
+#### Certificate Status Request: `api/v1/cs/{serial}` **GET**
+
+Requests the certificate status based on the supplied certificate serial number.
 
 #### Key Update Request: `api/v1/kur` **POST**
 

@@ -11,10 +11,11 @@ import (
 )
 
 // Initialisation request handler
-func irGet(w http.ResponseWriter, r *http.Request) {
+func irPost(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"message": "ir GET called"}`))
+	w.Write([]byte(`{"message": "ir POST called"}
+{"serial": "Device serial number"}`))
 }
 
 // Certification request handler
@@ -33,9 +34,15 @@ func p10crPost(w http.ResponseWriter, r *http.Request) {
 
 // Certificate status request handler
 func csGet(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"message": "cs GET called"}`))
+	pathParams := mux.Vars(r)
+
+	if serialNumber, ok := pathParams["serial"]; ok {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(fmt.Sprintf(`{"message": "cs GET called"}
+{"serial": %s}`, serialNumber)))
+		return
+	}
 }
 
 // Key update request handler
@@ -62,6 +69,7 @@ func notFound(w http.ResponseWriter, r *http.Request) {
 // Test endpoint: https://localhost/api/v1/status/123?format=cbor
 func statusGet(w http.ResponseWriter, r *http.Request) {
 	pathParams := mux.Vars(r)
+
 	w.Header().Set("Content-Type", "application/json")
 
 	deviceID := -1
@@ -96,10 +104,10 @@ func Start(port int16) {
 
 	// Setup the REST API subrouter
 	api := r.PathPrefix("/api/v1").Subrouter()
-	api.HandleFunc("/ir", irGet).Methods(http.MethodGet)
+	api.HandleFunc("/ir", irPost).Methods(http.MethodPost)
 	api.HandleFunc("/cr", crPost).Methods(http.MethodPost)
 	api.HandleFunc("/p10cr", p10crPost).Methods(http.MethodPost)
-	api.HandleFunc("/cs", csGet).Methods(http.MethodGet)
+	api.HandleFunc("/cs/{serial}", csGet).Methods(http.MethodGet)
 	api.HandleFunc("/kur", kurPost).Methods(http.MethodPost)
 	api.HandleFunc("/krr", krrPost).Methods(http.MethodPost)
 	api.HandleFunc("/status/{deviceID}", statusGet).Methods(http.MethodGet)
