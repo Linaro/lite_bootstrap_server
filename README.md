@@ -20,7 +20,7 @@ You can then generate a self-signed X.509 public key via:
 
 ```bash
 $ openssl req -new -x509 -sha256 -days 3650 -key SERVER.key -out SERVER.crt \
-        -subj "/O=Linaro, LTD/CN=LinaroCA HTTP Server Cert"
+        -subj "/O=Linaro, LTD/CN=localhost"
 ```
 
 This public key should be available on any devices connecting to the CA to
