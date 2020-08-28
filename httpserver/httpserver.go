@@ -1,6 +1,7 @@
 package httpserver
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -18,8 +19,27 @@ func irPost(w http.ResponseWriter, r *http.Request) {
 {"serial": "Device serial number"}`))
 }
 
+type CSRRequest struct {
+	CSR []byte
+}
+
 // Certification request handler
 func crPost(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	dec := json.NewDecoder(r.Body)
+	var req CSRRequest
+	err := dec.Decode(&req)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{"error": "Bad request"}`))
+		return
+	}
+
+	// fmt.Printf("Got csr: %v\n", &req)
+
+	handleCSR(req.CSR)
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(`{"message": "cr POST called"}`))
