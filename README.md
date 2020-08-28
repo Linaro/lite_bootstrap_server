@@ -88,3 +88,12 @@ key or the current subject public key.
 #### Key Revocation Request: `api/v1/krr` **POST**
 
 Requests the revocation of an existing certificate registration.
+
+## Certificate requests
+
+To simulate the generation of a certificate request from a device,
+there is a program `make_csr_json.go` to help with this.  Follow the
+directions in the comments at the top of this file to generate a
+sample certificate request.  By running the server, and using the
+`wget` command described, this certificate will be presented to
+linaroca for processing, eventually to return a generated certificate.
