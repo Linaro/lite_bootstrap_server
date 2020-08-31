@@ -23,6 +23,11 @@ type CSRRequest struct {
 	CSR []byte
 }
 
+type CSRResponse struct {
+	Status int
+	Cert   []byte
+}
+
 // Certification request handler
 func crPost(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -38,11 +43,21 @@ func crPost(w http.ResponseWriter, r *http.Request) {
 
 	// fmt.Printf("Got csr: %v\n", &req)
 
-	handleCSR(req.CSR)
+	cert, err := handleCSR(req.CSR)
+	if err != nil {
+		// TODO: Encode the error.
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(w, "err: %v", err)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"message": "cr POST called"}`))
+	enc := json.NewEncoder(w)
+	err = enc.Encode(&CSRResponse{
+		Status: 0,
+		Cert:   cert,
+	})
 }
 
 // Certification request from PKCS#10 handler
