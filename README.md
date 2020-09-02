@@ -32,6 +32,14 @@ The contents of the certificate can be verified via:
 $ openssl x509 -in SERVER.crt -noout -text
 ```
 
+### Generate a CA key
+
+```bash
+$ ./linaroca cakey generate
+generate called
+use cafile: CA.crt
+```
+
 ## HTTPS Server
 
 To initialise the HTTPS server on the default port (443), run:
