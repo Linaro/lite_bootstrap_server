@@ -293,3 +293,21 @@ Certificate:
          ae:02:20:49:18:2d:0e:20:8c:5c:19:dd:8f:b7:2f:66:e0:73:
          38:f1:aa:9a:63:1b:6c:ae:29:a7:ad:40:b1:c5:59:e1:f8
 ```
+
+#### 7. Optional: Verify the Certificate
+
+You can verify that the generated certificate was signed by the CA using the
+`CA.crt` file generated earlier in this guide.
+
+First, convert `USER.crt` (from step 6 above) from DER format to PEM via:
+
+```bash
+$ openssl x509 -in USER.crt -inform DER -out USER.pem -outform PEM
+```
+
+Then verify `USER.pem` against `CA.crt`:
+
+```bash
+$ openssl verify -CAfile CA.crt USER.pem 
+USER.pem: OK
+```
