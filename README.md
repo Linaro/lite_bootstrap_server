@@ -98,7 +98,7 @@ The REST API is a **work in progress**, and not fully implemented at present!
 
 API based loosely on [CMP (RFC4210)](https://tools.ietf.org/html/rfc4210).
 
-### Initialisation Request: `/api/v1/ir` **POST**
+- `/api/v1/ir` Initialisation Request: **POST**
 
 This endpoint is used to register new (previously unregistered) devices into
 the management system. Initialisation must occur before certificates can be
@@ -107,7 +107,7 @@ requested.
 A unique serial number must be provided for the device, and any certificates
 issued for this device will be associated with this device serial number.
 
-### Certification Request: `/api/v1/cr` **POST**
+- `/api/v1/cr` Certification Request: **POST**
 
 This endpoint is used for certificate requests from existing devices who
 wish to obtain new certificates.
@@ -115,7 +115,7 @@ wish to obtain new certificates.
 The CA will assign and record a unique serial number for this certificate,
 which can be used later to check the certificate status via the `cs` endpoint.
 
-### Certification Request from PKCS10: `/api/v1/p10cr` **POST**
+- `/api/v1/p10cr` Certification Request from PKCS10: **POST**
 
 This endpoint is used for certificate requests from existing devices who
 wish to obtain new certificates, providing a PKCS#10 CSR file for the request.
@@ -123,17 +123,17 @@ wish to obtain new certificates, providing a PKCS#10 CSR file for the request.
 The CA will assign and record a unique serial number for this certificate,
 which can be used later to check the certificate status via the `cs` endpoint.
 
-### Certificate Status Request: `api/v1/cs/{serial}` **GET**
+- `api/v1/cs/{serial}` Certificate Status Request: **GET**
 
 Requests the certificate status based on the supplied certificate serial number.
 
-### Key Update Request: `api/v1/kur` **POST**
+- `api/v1/kur` Key Update Request: **POST**
 
 Request an update to an existing (non-revoked and non-expired) certificate. An
 update is a replacement certificate containing either a new subject public
 key or the current subject public key.
 
-### Key Revocation Request: `api/v1/krr` **POST**
+- `api/v1/krr` Key Revocation Request: **POST** 
 
 Requests the revocation of an existing certificate registration.
 
@@ -148,7 +148,7 @@ to the CA server using the REST API. The encoded CSR file can then be sent to
 the CA server using `wget`, which will return the generated certificate as
 a JSON payload.
 
-### 1. Generate a private user key with openssl
+#### 1. Generate a private user key with openssl
 
 Each device requires its own private key, which is securely held on the
 embedded device, and should never be exposed. For simulation purposes, however,
@@ -158,7 +158,7 @@ we generate a user key locally with `openssl`, storing is as `USER.key`.
 $ openssl ecparam -name prime256v1 -genkey -out USER.key
 ```
 
-### 2. Generate a CSR based on the private user key. 
+#### 2. Generate a CSR based on the private user key. 
 
 The `CN` field of the certificate signing request's subject **MUST** be a
 unique identifier for the device being registered. A UUID is a good choice
@@ -184,13 +184,13 @@ $ openssl req -new -key USER.key -out USER.csr \
     -subj "/O=localhost/CN=396c7a48-a1a6-4682-ba36-70d13f3b8902"
 ```
 
-### 3. Convert the CSR to JSON (`make_csr_json.go`):
+#### 3. Convert the CSR to JSON (`make_csr_json.go`):
 
 ```bash
 $ go run make_csr_json.go
 ```
 
-### 4. Start `linaroca`
+#### 4. Start `linaroca`
 
 > **NOTE**: You first need to generate keys for the CA and HTTPS server,
   as described earlier in this readme.
@@ -200,7 +200,7 @@ $ ./linaroca server start
 Starting HTTPS server on port https://localhost:443
 ```
 
-### 5. Send `USER.json` to `api/v1/cr` using `wget`:
+#### 5. Send `USER.json` to `api/v1/cr` using `wget`:
 
 > Note the use of the `SERVER.crt` certificate to verify that we are talking
   to the server that we believe we are communicating with.
@@ -226,7 +226,7 @@ cr                  100%[========================>]     567  --.-KB/s    in 0s
 2020-10-05 13:30:17 (77.2 MB/s) - ‘cr’ saved [567/567]
 ```
 
-### 6. View the JSON-encoded certificate response
+#### 6. View the JSON-encoded certificate response
 
 If the CSR was accepted and successfully processed, the response will be a
 certificate enclosed in a JSON wrapper, with the certificate payload BASE64
@@ -247,14 +247,13 @@ FAiEApX/N3shitI6Yx19iLhcTu31FURcQUI8ZDHWF6UoiyK4CIEkYLQ4gjFwZ3Y
 This response packet will need to be parsed, and the certificate payload stored
 on the embedded device.
 
-As a test, you can use `jq` to parse the JSON packet and convert it from BASE64
-to a binary file via:
+As a test, you can parse the JSON packet and convert from BASE64 to binary via:
 
 ```bash
 $ jq -r '.Cert' < cr | base64 --decode > USER.crt
 ```
 
-The certificate can then be parsed via:
+The certificate can then be parsed as follows:
 
 ```bash
 $ openssl x509 -in USER.crt -text
