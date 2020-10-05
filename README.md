@@ -158,7 +158,7 @@ we generate a user key locally with `openssl`, storing is as `USER.key`.
 $ openssl ecparam -name prime256v1 -genkey -out USER.key
 ```
 
-#### 2. Generate a CSR based on the private user key. 
+#### 2. Generate a CSR based on the private user key
 
 The `CN` field of the certificate signing request's subject **MUST** be a
 unique identifier for the device being registered. A UUID is a good choice
@@ -168,7 +168,7 @@ for this, and we can generate a new UUID as follows:
   field MUST be unique, and should never be reused across devices.
 
 ```bash
-$ uuidgen
+$ uuidgen | tr "[:upper:]" "[:lower:]"
   396c7a48-a1a6-4682-ba36-70d13f3b8902
 ```
 
@@ -184,7 +184,7 @@ $ openssl req -new -key USER.key -out USER.csr \
     -subj "/O=localhost/CN=396c7a48-a1a6-4682-ba36-70d13f3b8902"
 ```
 
-#### 3. Convert the CSR to JSON (`make_csr_json.go`):
+#### 3. Convert the CSR to JSON (`make_csr_json.go`)
 
 ```bash
 $ go run make_csr_json.go
@@ -200,7 +200,7 @@ $ ./linaroca server start
 Starting HTTPS server on port https://localhost:443
 ```
 
-#### 5. Send `USER.json` to `api/v1/cr` using `wget`:
+#### 5. Send `USER.json` to `api/v1/cr` using `wget`
 
 > Note the use of the `SERVER.crt` certificate to verify that we are talking
   to the server that we believe we are communicating with.
@@ -226,42 +226,42 @@ cr                  100%[========================>]     567  --.-KB/s    in 0s
 2020-10-05 13:30:17 (77.2 MB/s) - ‘cr’ saved [567/567]
 ```
 
-#### 6. View the JSON-encoded certificate response
+#### 6. Process the JSON-encoded certificate response
 
 If the CSR was accepted and successfully processed, the response will be a
-certificate enclosed in a JSON wrapper, with the certificate payload BASE64
-encoded in the `Cert` field:
+DER formatted certificate enclosed in a JSON wrapper, with the certificate
+payload BASE64 encoded in the `Cert` field:
 
 ```
 {"Status":0,
-"Cert":"MIIBlDCCATqgAwIBAgIIFjsVNsN2hQgwCgYIKoZIzj0EAwIwOjEUMBIGA1UEChMLTGluYXJ
-vLCBMVEQxIjAgBgNVBAMTGUxpbmFyb0NBIFJvb3QgQ2VydCAtIDIwMjAwHhcNMjAxMDA1MTEzMDE3Wh
-cNMjExMDA1MTEzMDE3WjBBMRAwDgYDVQQKEwdPcmduYW1lMS0wKwYDVQQDEyQzOTZjN2E0OC1hMWE2L
-TQ2ODItYmEzNi03MGQxM2YzYjg5MDIwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAATMdS7FSxBP9CJp
-ZIZyzq9ocTy7HisS0EMS78paXAMogZNSHAc4VotitaB53IFvnom4j1qFAF4PF3m/
-YBuVYHN4oyMwITAfBgNVHSMEGDAWgBQuja3DxwDP0PrFiaNwjSFmVgXcgzAKBggqhkjOPQQDAgNIADB
-FAiEApX/N3shitI6Yx19iLhcTu31FURcQUI8ZDHWF6UoiyK4CIEkYLQ4gjFwZ3Y
-+3L2bgczjxqppjG2yuKaetQLHFWeH4"}
+"Cert":"MIIBljCCATygAwIBAgIIFjs36o603SAwCgYIKoZIzj0EAwIwOjEUMBIGA1UEChMLTGluY
+XJvLCBMVEQxIjAgBgNVBAMTGUxpbmFyb0NBIFJvb3QgQ2VydCAtIDIwMjAwHhcNMjAxMDA1MjIwNj
+EzWhcNMjExMDA1MjIwNjEzWjBDMRIwEAYDVQQKEwlsb2NhbGhvc3QxLTArBgNVBAMTJDUxQTI1NEZ
+CLTkxRjktNDVCMi1BMDgwLUQ0NzAwQTExNDA1RTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABP9y
+vsNEyAdsicLchrgVcsbnZYMpp00VXZqti/Jl7blWWPW0Ya6k8Z9nSV4ptb7qDVNi/
+J5R5CNqVtcmKmhpUmyjIzAhMB8GA1UdIwQYMBaAFCKiwuMPhzyAZ1p1kYnbTn38GE6MMAoGCCqGSM
+49BAMCA0gAMEUCIQCQjKZRW2BVZYHrOcMQbgW5TJ1GkIy8nTNcSHcIAtrffgIgZhLLnZjrskWALWw
+9E3MIzZ+oP36wBKgP21ZJhEZmoVE="}
 ```
 
-This response packet will need to be parsed, and the certificate payload stored
-on the embedded device.
-
-As a test, you can parse the JSON packet and convert from BASE64 to binary via:
+As a test, you can parse the JSON packet locally and convert it from BASE64
+to a binary DER file via:
 
 ```bash
-$ jq -r '.Cert' < cr | base64 --decode > USER.crt
+$ jq -r '.Cert' < cr | base64 --decode > USER.der
+```
+
+You can then convert it from binary **DER** to text **PEM** format via:
+
+```bash
+$ openssl x509 -in USER.der -inform DER -out USER.crt -outform PEM
 ```
 
 The certificate can then be parsed as follows:
 
 ```bash
-$ openssl x509 -inform der -in USER.crt -noout -text
-```
+$ openssl x509 -in USER.crt -noout -text
 
-Which should yield something resembling the following:
-
-```
 Certificate:
     Data:
         Version: 3 (0x2)
@@ -299,15 +299,7 @@ Certificate:
 You can verify that the generated certificate was signed by the CA using the
 `CA.crt` file generated earlier in this guide.
 
-First, convert `USER.crt` (from step 6 above) from DER format to PEM via:
-
 ```bash
-$ openssl x509 -in USER.crt -inform DER -out USER.pem -outform PEM
-```
-
-Then verify `USER.pem` against `CA.crt`:
-
-```bash
-$ openssl verify -CAfile CA.crt USER.pem 
-USER.pem: OK
+$ openssl verify -CAfile CA.crt USER.crt
+USER.crt: OK
 ```
