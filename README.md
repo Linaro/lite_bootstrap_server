@@ -256,5 +256,40 @@ $ jq -r '.Cert' < cr | base64 --decode > USER.crt
 The certificate can then be parsed as follows:
 
 ```bash
-$ openssl x509 -in USER.crt -text
+$ openssl x509 -inform der -in USER.crt -noout -text
+```
+
+Which should yield something resembling the following:
+
+```
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number: 1601897417412085000 (0x163b1536c3768508)
+    Signature Algorithm: ecdsa-with-SHA256
+        Issuer: O=Linaro, LTD, CN=LinaroCA Root Cert - 2020
+        Validity
+            Not Before: Oct  5 11:30:17 2020 GMT
+            Not After : Oct  5 11:30:17 2021 GMT
+        Subject: O=localhost, CN=396c7a48-a1a6-4682-ba36-70d13f3b8902
+        Subject Public Key Info:
+            Public Key Algorithm: id-ecPublicKey
+                Public-Key: (256 bit)
+                pub: 
+                    04:cc:75:2e:c5:4b:10:4f:f4:22:69:64:86:72:ce:
+                    af:68:71:3c:bb:1e:2b:12:d0:43:12:ef:ca:5a:5c:
+                    03:28:81:93:52:1c:07:38:56:8b:62:b5:a0:79:dc:
+                    81:6f:9e:89:b8:8f:5a:85:00:5e:0f:17:79:bf:60:
+                    1b:95:60:73:78
+                ASN1 OID: prime256v1
+                NIST CURVE: P-256
+        X509v3 extensions:
+            X509v3 Authority Key Identifier: 
+                keyid:2E:8D:AD:C3:C7:00:CF:D0:FA:C5:89:A3:70:8D:21:66:56:05:DC:83
+
+    Signature Algorithm: ecdsa-with-SHA256
+         30:45:02:21:00:a5:7f:cd:de:c8:62:b4:8e:98:c7:5f:62:2e:
+         17:13:bb:7d:45:51:17:10:50:8f:19:0c:75:85:e9:4a:22:c8:
+         ae:02:20:49:18:2d:0e:20:8c:5c:19:dd:8f:b7:2f:66:e0:73:
+         38:f1:aa:9a:63:1b:6c:ae:29:a7:ad:40:b1:c5:59:e1:f8
 ```
