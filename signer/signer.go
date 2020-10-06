@@ -42,7 +42,7 @@ func NewSigningCert() (*SigningCert, error) {
 		NotAfter:    time.Now().AddDate(1, 0, 0),
 		IsCA:        true,
 		ExtKeyUsage: []x509.ExtKeyUsage{},
-		KeyUsage:    x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
+		KeyUsage:    x509.KeyUsageCertSign,
 	}
 
 	privKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
