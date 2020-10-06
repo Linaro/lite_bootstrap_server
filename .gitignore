@@ -1,7 +1,11 @@
+CADB.db
 CA.key
 CA.crt
 SERVER.key
 SERVER.crt
+USER.*
+cr
+cr.*
 
 # Binaries for programs and plugins
 *.exe
