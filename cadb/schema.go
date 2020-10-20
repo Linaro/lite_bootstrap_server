@@ -20,10 +20,11 @@ var schema = []string{
 	`CREATE TABLE certs (id STRING NOT NULL REFERENCES devices(id),
 		serial STRING NOT NULL,
 		cert BLOB NOT NULL,
+		expiry DATE NOT NULL,
 		PRIMARY KEY (id, serial))`,
 }
 
-const schemaVersion = "20200820b"
+const schemaVersion = "20201020a"
 
 func (conn *Conn) checkSchema() error {
 	// Query the settings table for the schema version.
