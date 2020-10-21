@@ -28,11 +28,12 @@ func handleCSR(asn1Data []byte) ([]byte, error) {
 
 	ser, err := db.GetSerial()
 
+	expiry := time.Now().AddDate(1, 0, 0)
 	cert := &x509.Certificate{
 		SerialNumber: ser,
 		Subject:      csr.Subject,
 		NotBefore:    time.Now(),
-		NotAfter:     time.Now().AddDate(1, 0, 0),
+		NotAfter:     expiry,
 		// TODO: Extensions that make sense to us.
 	}
 
@@ -46,7 +47,7 @@ func handleCSR(asn1Data []byte) ([]byte, error) {
 	}
 
 	id := cert.Subject.CommonName
-	err = db.AddCert(id, ser, signedCert)
+	err = db.AddCert(id, ser, expiry, signedCert)
 	if err != nil {
 		fmt.Printf("Add cert err: %v\n", err)
 		return nil, err
