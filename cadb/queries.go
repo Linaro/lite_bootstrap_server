@@ -63,9 +63,9 @@ func (conn *Conn) tryGetSerial() (*big.Int, error) {
 }
 
 // AddCert adds a newly generated certificate to the database.
-func (conn *Conn) AddCert(id string, serial *big.Int, expiry time.Time, cert []byte) error {
+func (conn *Conn) AddCert(id string, serial *big.Int, keyId []byte, expiry time.Time, cert []byte) error {
 	// TODO: Inside of transaction.
-	_, err := conn.db.Exec(`INSERT INTO certs (id, serial, expiry, cert) VALUES (?, ?, ?, ?)`,
-		id, serial.Int64(), expiry, cert)
+	_, err := conn.db.Exec(`INSERT INTO certs (id, serial, keyid, expiry, cert) VALUES (?, ?, ?, ?, ?)`,
+		id, serial.Int64(), keyId, expiry, cert)
 	return err
 }

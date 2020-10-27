@@ -72,9 +72,23 @@ func NewSigningCert() (*SigningCert, error) {
 	}, nil
 }
 
-func (s *SigningCert) SignTemplate(template *x509.Certificate) ([]byte, error) {
+func (s *SigningCert) SignTemplate(template *x509.Certificate, pub interface{}) ([]byte, error) {
+	ecPub, ok := pub.(*ecdsa.PublicKey)
+	if !ok {
+		return nil, fmt.Errorf("Expecting ECDSA key on CSR")
+	}
+
+	// Fill in the SubjectKeyId in the template, based on the
+	// public key.  The AuthorityKeyId will be filled in by the
+	// x509 library, provided we're using a recent enough version
+	// of Go.
+	pubBytes := elliptic.Marshal(ecPub.Curve, ecPub.X, ecPub.Y)
+	keyId := sha1.Sum(pubBytes)
+
+	template.SubjectKeyId = keyId[:]
+
 	return x509.CreateCertificate(rand.Reader, template, s.Cert,
-		&s.PrivateKey.PublicKey, s.PrivateKey)
+		pub, s.PrivateKey)
 }
 
 // LoadSigningCert loads a signing certificate from a pair of files
