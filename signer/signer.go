@@ -38,11 +38,12 @@ func NewSigningCert() (*SigningCert, error) {
 			Organization: []string{"Linaro, LTD"},
 			CommonName:   "LinaroCA Root Cert - 2020",
 		},
-		NotBefore:   time.Now(),
-		NotAfter:    time.Now().AddDate(1, 0, 0),
-		IsCA:        true,
-		ExtKeyUsage: []x509.ExtKeyUsage{},
-		KeyUsage:    x509.KeyUsageCertSign,
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now().AddDate(1, 0, 0),
+		BasicConstraintsValid: true,
+		IsCA:                  true,
+		ExtKeyUsage:           []x509.ExtKeyUsage{},
+		KeyUsage:              x509.KeyUsageCertSign,
 	}
 
 	privKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
