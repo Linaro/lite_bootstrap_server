@@ -7,6 +7,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/sha1"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
@@ -50,6 +51,14 @@ func NewSigningCert() (*SigningCert, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// Determine the KeyID based on the sha1 of the marshalled
+	// public key.
+	pubBytes := elliptic.Marshal(privKey.Curve, privKey.X, privKey.Y)
+	keyId := sha1.Sum(pubBytes)
+
+	ca.SubjectKeyId = keyId[:]
+	ca.AuthorityKeyId = keyId[:]
 
 	// Self sign this key.
 	cert, err := x509.CreateCertificate(rand.Reader, ca, ca, &privKey.PublicKey, privKey)
