@@ -7,6 +7,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/sha1"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
@@ -38,17 +39,26 @@ func NewSigningCert() (*SigningCert, error) {
 			Organization: []string{"Linaro, LTD"},
 			CommonName:   "LinaroCA Root Cert - 2020",
 		},
-		NotBefore:   time.Now(),
-		NotAfter:    time.Now().AddDate(1, 0, 0),
-		IsCA:        true,
-		ExtKeyUsage: []x509.ExtKeyUsage{},
-		KeyUsage:    x509.KeyUsageCertSign,
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now().AddDate(1, 0, 0),
+		BasicConstraintsValid: true,
+		IsCA:                  true,
+		ExtKeyUsage:           []x509.ExtKeyUsage{},
+		KeyUsage:              x509.KeyUsageCertSign,
 	}
 
 	privKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		return nil, err
 	}
+
+	// Determine the KeyID based on the sha1 of the marshalled
+	// public key.
+	pubBytes := elliptic.Marshal(privKey.Curve, privKey.X, privKey.Y)
+	keyId := sha1.Sum(pubBytes)
+
+	ca.SubjectKeyId = keyId[:]
+	ca.AuthorityKeyId = keyId[:]
 
 	// Self sign this key.
 	cert, err := x509.CreateCertificate(rand.Reader, ca, ca, &privKey.PublicKey, privKey)
@@ -62,9 +72,23 @@ func NewSigningCert() (*SigningCert, error) {
 	}, nil
 }
 
-func (s *SigningCert) SignTemplate(template *x509.Certificate) ([]byte, error) {
+func (s *SigningCert) SignTemplate(template *x509.Certificate, pub interface{}) ([]byte, error) {
+	ecPub, ok := pub.(*ecdsa.PublicKey)
+	if !ok {
+		return nil, fmt.Errorf("Expecting ECDSA key on CSR")
+	}
+
+	// Fill in the SubjectKeyId in the template, based on the
+	// public key.  The AuthorityKeyId will be filled in by the
+	// x509 library, provided we're using a recent enough version
+	// of Go.
+	pubBytes := elliptic.Marshal(ecPub.Curve, ecPub.X, ecPub.Y)
+	keyId := sha1.Sum(pubBytes)
+
+	template.SubjectKeyId = keyId[:]
+
 	return x509.CreateCertificate(rand.Reader, template, s.Cert,
-		&s.PrivateKey.PublicKey, s.PrivateKey)
+		pub, s.PrivateKey)
 }
 
 // LoadSigningCert loads a signing certificate from a pair of files

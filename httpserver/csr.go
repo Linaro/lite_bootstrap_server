@@ -40,14 +40,14 @@ func handleCSR(asn1Data []byte) ([]byte, error) {
 	// fmt.Printf("CSR: %v\n", csr)
 	// fmt.Printf("Cert: %v\n", cert)
 
-	signedCert, err := signCert(cert)
+	signedCert, err := signCert(cert, csr.PublicKey)
 	if err != nil {
 		fmt.Printf("Sign error: %v\n", err)
 		return nil, err
 	}
 
 	id := cert.Subject.CommonName
-	err = db.AddCert(id, ser, expiry, signedCert)
+	err = db.AddCert(id, ser, cert.SubjectKeyId, expiry, signedCert)
 	if err != nil {
 		fmt.Printf("Add cert err: %v\n", err)
 		return nil, err
@@ -56,7 +56,7 @@ func handleCSR(asn1Data []byte) ([]byte, error) {
 	return signedCert, nil
 }
 
-func signCert(template *x509.Certificate) ([]byte, error) {
+func signCert(template *x509.Certificate, pub interface{}) ([]byte, error) {
 	// TODO: Don't use hardcoded names here.
 	// TODO: This can probably share a bit of code with the root
 	// cert generation.
@@ -66,7 +66,7 @@ func signCert(template *x509.Certificate) ([]byte, error) {
 		return nil, err
 	}
 
-	cert, err := sig.SignTemplate(template)
+	cert, err := sig.SignTemplate(template, pub)
 	if err != nil {
 		return nil, err
 	}

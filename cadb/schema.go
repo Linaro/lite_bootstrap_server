@@ -19,12 +19,13 @@ var schema = []string{
 	// certs holds all of the certificates we've ever issued.
 	`CREATE TABLE certs (id STRING NOT NULL REFERENCES devices(id),
 		serial STRING NOT NULL,
+		keyid BLOB NOT NULL,
 		cert BLOB NOT NULL,
 		expiry DATE NOT NULL,
 		PRIMARY KEY (id, serial))`,
 }
 
-const schemaVersion = "20201020a"
+const schemaVersion = "20201027a"
 
 func (conn *Conn) checkSchema() error {
 	// Query the settings table for the schema version.
