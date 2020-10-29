@@ -28,6 +28,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+
+	"github.com/microbuilder/linaroca/protocol"
 )
 
 var (
@@ -43,10 +45,6 @@ func main() {
 		fmt.Printf("Failure: %v\n", err)
 		os.Exit(1)
 	}
-}
-
-type Request struct {
-	CSR []byte
 }
 
 func run() error {
@@ -69,7 +67,7 @@ func run() error {
 		return fmt.Errorf("Expecting BEGIN CERTIFICATE REQUEST")
 	}
 
-	req := Request{
+	req := protocol.CSRRequest{
 		CSR: pem.Bytes,
 	}
 	encoded, err := json.Marshal(&req)
