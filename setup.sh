@@ -8,6 +8,10 @@ go build
 # Clean up previous artifacts
 rm CA.* SERVER.* USER.*
 
+# Clean up the database (this is for testing), since once we've
+# removed the CA.crt, those certs are fairly meanmingless.
+rm CADB.db
+
 # Generate private key for the HTTP server
 openssl ecparam -name secp256r1 -genkey -out SERVER.key
 
