@@ -15,15 +15,15 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/microbuilder/linaroca/cadb"
+	"github.com/microbuilder/linaroca/protocol"
 )
 
-type CSRRequest struct {
-	CSR []byte
-}
-
-type CSRResponse struct {
-	Status int
-	Cert   []byte
+// Initialisation request handler
+func irPost(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"message": "ir POST called"}
+{"serial": "Device serial number"}`))
 }
 
 // Certification request handler
@@ -31,7 +31,7 @@ func crPost(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	dec := json.NewDecoder(r.Body)
-	var req CSRRequest
+	var req protocol.CSRRequest
 	err := dec.Decode(&req)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -52,7 +52,7 @@ func crPost(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	enc := json.NewEncoder(w)
-	err = enc.Encode(&CSRResponse{
+	err = enc.Encode(&protocol.CSRResponse{
 		Status: 0,
 		Cert:   cert,
 	})
