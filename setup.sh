@@ -28,7 +28,7 @@ openssl req -new -key USER.key -out USER.csr \
 # Convert CSR to JSON
 go run make_csr_json.go
 
-echo "HTTP and CA certs and USER CSR generated.\n"
+echo "HTTP cert, CA cert and USER CSR generated."
 
 # Start linaroca
 ./linaroca server start -p 1443
@@ -36,10 +36,11 @@ echo "HTTP and CA certs and USER CSR generated.\n"
 # At this point we can submit the CSR via:
 # $ wget --ca-certificate=SERVER.crt \
 #     --post-file USER.json \
-#     https://localhost:1443/api/v1/cr
+#     https://localhost:1443/api/v1/cr \
+#     -O USER.cr
 #
 # Convert it to DER then PEM:
-# $ jq -r '.Cert' < cr | base64 --decode > USER.der
+# $ jq -r '.Cert' < USER.cr | base64 --decode > USER.der
 # $ openssl x509 -in USER.der -inform DER -out USER.crt -outform PEM
 #
 # Then, verify it:

@@ -98,7 +98,7 @@ To initialise the HTTP server with TLS on the default port (443 or 1443), run:
 
 ```bash
 $ ./linaroca server start
-Starting HTTPS server on port https://localhost:443
+Starting HTTPS server on port https://localhost:1443
 ```
 
 This will serve web pages from root, and handle REST API requests from the
@@ -201,8 +201,8 @@ $ go run make_csr_json.go
   as described earlier in this readme.
 
 ```bash
-$ ./linaroca server start
-Starting HTTPS server on port https://localhost:443
+$ ./linaroca server start -p 1443
+Starting HTTPS server on port https://localhost:1443
 ```
 
 #### 5. Send `USER.json` to `api/v1/cr` using `wget`
@@ -213,22 +213,23 @@ Starting HTTPS server on port https://localhost:443
 ```bash
 $ wget --ca-certificate=SERVER.crt \
     --post-file USER.json \
-    https://localhost:443/api/v1/cr
+    https://localhost:1443/api/v1/cr \
+    -O USER.cr
 ```
 
 This should produce the following output:
 
 ```
---2020-10-05 13:30:17--  https://localhost/api/v1/cr
+--2020-10-29 18:30:46--  https://localhost:1443/api/v1/cr
 Resolving localhost (localhost)... ::1, 127.0.0.1
-Connecting to localhost (localhost)|::1|:443... connected.
+Connecting to localhost (localhost)|::1|:1443... connected.
 HTTP request sent, awaiting response... 200 OK
-Length: 567 [application/json]
-Saving to: ‘cr’
+Length: 611 [application/json]
+Saving to: ‘USER.cr’
 
-cr                  100%[========================>]     567  --.-KB/s    in 0s      
+USER.cr                            100%[==============================================================>]     611  --.-KB/s    in 0s      
 
-2020-10-05 13:30:17 (77.2 MB/s) - ‘cr’ saved [567/567]
+2020-10-29 18:30:46 (83.2 MB/s) - ‘USER.cr’ saved [611/611]
 ```
 
 #### 6. Process the JSON-encoded certificate response
@@ -253,7 +254,7 @@ As a test, you can parse the JSON packet locally and convert it from BASE64
 to a binary DER file via:
 
 ```bash
-$ jq -r '.Cert' < cr | base64 --decode > USER.der
+$ jq -r '.Cert' < USER.cr | base64 --decode > USER.der
 ```
 
 You can then convert it from binary **DER** to text **PEM** format via:
@@ -307,4 +308,12 @@ You can verify that the generated certificate was signed by the CA using the
 ```bash
 $ openssl verify -CAfile CA.crt USER.crt
 USER.crt: OK
+```
+
+#### 8. Optional: Verify CA Database Contents
+
+You can check the contents of the CA DB via:
+
+```bash
+$ sqlite3 CADB.db .dump
 ```
