@@ -11,7 +11,13 @@ Certificate requests are logged to a local SQLite database (`CADB.db`), which
 can be used to extend the utility for blocklist/allowlist type features,
 and certificate status checks based on the registered device's unique ID.
 
-## Quick Setup 
+## Quick Setup
+
+### Setup Script
+
+A bash script named `setup.sh`, in the root of this repo, can be used to
+generate the HTTP and CA keys and certificates, and start the server. The
+steps included in this script are detailed below.
 
 ### Building `linaroca`
 
@@ -166,28 +172,21 @@ $ openssl ecparam -name prime256v1 -genkey -out USER.key
 
 #### 2. Generate a CSR based on the private user key
 
-The `CN` field of the certificate signing request's subject **MUST** be a
-unique identifier for the device being registered. A UUID is a good choice
-for this, and we can generate a new UUID as follows:
-
-> **IMPORTANT**: Be sure to change the UUID from the example used here! This
-  field MUST be unique, and should never be reused across devices.
-
-```bash
-$ uuidgen | tr "[:upper:]" "[:lower:]"
-  396c7a48-a1a6-4682-ba36-70d13f3b8902
-```
-
-Next, generate a CSR using this UUID and the private key in `USER.key`:
+We can now generate a sample CSR using the private key we just saved to
+`USER.key`, and a random UUID for the `CN` field.
 
 > **IMPORTANT**: The `O` field should be set to `localhost` for local
   tests, to match the value set in the HTTP Server's `LTD/CN` field (see
   earlier in this guide). This should be changed to a different, unique value
   (`MyOrgname`, etc.) in production.
 
+> **IMPORTANT**: The `CN` field of the certificate signing request's subject
+  **MUST** be a unique identifier for the device being registered. A UUID is a
+  good choice for this (using `uuidgen`, etc.).
+
 ```bash
 $ openssl req -new -key USER.key -out USER.csr \
-    -subj "/O=localhost/CN=396c7a48-a1a6-4682-ba36-70d13f3b8902"
+    -subj "/O=localhost/CN=$(uuidgen | tr '[:upper:]' '[:lower:]')"
 ```
 
 #### 3. Convert the CSR to JSON (`make_csr_json.go`)
