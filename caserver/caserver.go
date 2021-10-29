@@ -1,4 +1,4 @@
-package httpserver
+package caserver
 
 import (
 	"encoding/json"
@@ -157,7 +157,7 @@ func Start(port int16) {
 		log.Fatal("Server certificate and key not found. See README.md.")
 	}
 
-	fmt.Println("Starting HTTPS server on port https://localhost:" + strconv.Itoa(int(port)))
+	fmt.Println("Starting CA server on port https://localhost:" + strconv.Itoa(int(port)))
 	err := http.ListenAndServeTLS(":"+strconv.Itoa(int(port)), "SERVER.crt", "SERVER.key", r)
 	if err != nil {
 		log.Fatal("ListenAndServeTLS: ", err)
