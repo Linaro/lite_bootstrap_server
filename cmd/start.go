@@ -13,7 +13,7 @@ var startCmd = &cobra.Command{
 a REST API.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		mport, _ := serverCmd.Flags().GetInt16("mport")
-		go mtlsserver.Start(mport)
+		go mtlsserver.StartTCP(mport)
 		port, _ := serverCmd.Flags().GetInt16("port")
 		caserver.Start(port)
 	},

@@ -99,13 +99,13 @@ To initialise the HTTP server with TLS on the default port (1443), run:
 ```bash
 $ ./linaroca server start
 Starting CA server on port https://localhost:1443
-Starting mTLS echo server on port https://localhost:8443
+Starting mTLS TCP server on port https://localhost:8443
 ```
 
 This will serve web pages from root, and handle REST API requests from the
 `/api/v1` sub-path, with page routing handled in `httpserver.go`.
 
-> Note: A secondary HTTP server is started at the same time to test mutual TLS
+> Note: A secondary TCP server is started at the same time to test mutual TLS
   (mTLS) connections. This can be ignored at this point.
 
 ## REST API Endpoints
@@ -324,7 +324,7 @@ $ sqlite3 CADB.db .dump
 
 ## Testing mutual TLS Authentication
 
-A secondary HTTPS server is started up along with the main CA server to test
+A secondary TCP server is started up along with the main CA server to test
 mutual TLS authentication using client certificates.
 
 mutual TLS authentication requests a certificate from the connecting client
@@ -337,25 +337,36 @@ Once a user certificate has been generated (see steps above), you can test
 mTLS connections via:
 
 ```bash
-$ wget -qO- \
-       --ca-certificate=SERVER.crt \
-       --certificate=USER.crt \
-       --private-key=USER.key \
-       https://localhost:8443/hello
+$ openssl s_client \
+  -cert USER.crt -key USER.key \
+  -CAfile SERVER.crt \
+  -connect localhost:8443
 ```
 
-- The `ca-certificate` field indicates the certificate for the HTTPS server
-- The `certificate` field is the client certificate, signed by the CA
-- The `private-key` field is the client's private key used for challenges
-  during the TLS connection process.
+- The `cert` and `key` fields indicates the client certificate and key
+- The `CAfile` field is the server certificate, signed by the CA
 
-The CA key is not required in this situation since the HTTPS server has a
-copy of it that is used to validate the client certificate's signature.
+The CA key is not added in this situation since the TCP server has a
+copy of it that it uses to validate the client certificate's signature
+against.
 
-If the connection is successful, you should get the following response:
+If the connection is successful, you should get the following response
+at the end of the outptut:
 
 ```
-Hello, world!
+Verify return code: 0 (ok)
+```
+
+And linaroca will display details about the client cert in the log output:
+
+```bash
+$ ./linaroca server start
+Starting CA server on port https://localhost:1443
+Starting mTLS TCP server on localhost:8443
+Connection accepted from 127.0.0.1:50231
+Client certificate:
+- Issuer CN: LinaroCA Root Cert - 2020
+- Subject: CN=e8c47b42-f7fc-4dc8-b538-93496b619a3c,O=localhost
 ```
 
 ### Using an invalid client certificate
@@ -370,15 +381,15 @@ $ openssl req -new -x509 -sha256 -days 365 -key USERBAD.key -out USERBAD.crt -su
 Then try the request again:
 
 ```bash
-$ wget -qO- \
-       --ca-certificate=SERVER.crt \
-       --certificate=USERBAD.crt \
-       --private-key=USERBAD.key \
-       https://localhost:8443/hello
+$ openssl s_client \
+  -cert USERBAD.crt -key USERBAD.key \
+  -CAfile SERVER.crt\
+  -connect localhost:8443
 ```
 
 You should get the following error from linaroca:
 
 ```
-2021/10/29 15:14:29 http: TLS handshake error from [::1]:52761: tls: failed to verify client certificate: x509: certificate signed by unknown authority
+Connection accepted from 127.0.0.1:50443
+Client handshake error: tls: failed to verify client certificate: x509: certificate signed by unknown authority
 ```
