@@ -3,6 +3,7 @@ package caserver
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -10,14 +11,6 @@ import (
 
 	"github.com/gorilla/mux"
 )
-
-// Initialisation request handler
-func irPost(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"message": "ir POST called"}
-{"serial": "Device serial number"}`))
-}
 
 type CSRRequest struct {
 	CSR []byte
@@ -60,11 +53,82 @@ func crPost(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// Maximum file size for uploaded CSRs = 4 KB
+const MAX_CSR_UPLOAD_SIZE = 1024 * 4
+
 // Certification request from PKCS#10 handler
 func p10crPost(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"message": "p10cr POST called"}`))
+
+	// Expect multipart transfer
+	err := r.ParseMultipartForm(MAX_CSR_UPLOAD_SIZE)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{"error": "Bad request (no multipart form)"}`))
+		return
+	}
+
+	// Validate posted file
+	file, fileHeader, err := r.FormFile("csrfile")
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{"error": "Missing csrfile file"}`))
+		return
+	}
+	defer file.Close()
+
+	// Check file size
+	fileSize := fileHeader.Size
+	fmt.Printf("CSR file size: %v bytes\n", fileSize)
+	if fileSize > MAX_CSR_UPLOAD_SIZE {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{"error": "File too large"}`))
+		return
+	}
+
+	// Make sure we can read the file
+	fileBytes, err := ioutil.ReadAll(file)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{"error": "File unreadable"}`))
+		return
+	}
+
+	// Check file type, detectcontenttype only needs the first 512 bytes
+	detectedFileType := http.DetectContentType(fileBytes)
+	switch detectedFileType {
+	case "text/plain; charset=utf-8":
+		break
+	default:
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{"error": "Invalid file type (require 'text/plain; charset=utf-8')"}`))
+		return
+	}
+
+	// TOOD: Parse input CSR file and reply with certificate in PEM format
+	// MIME type = application/x-x509-user-cert or application/x-pem-file ?
+
+	fmt.Printf("Got csr: \n%s\n", fileBytes)
+
+	// cert, err := handleCSR(fileBytes)
+	// if err != nil {
+	// 	// TODO: Encode the error.
+	// 	w.WriteHeader(http.StatusBadRequest)
+	// 	w.Write([]byte(`{"error": "Invalid CSR"}`))
+	// 	return
+	// }
+
+	// w.Header().Set("Content-Type", "application/x-pem-file")
+	// w.WriteHeader(http.StatusOK)
+	// w.Write(cert)
+	// enc := json.NewEncoder(w)
+	// err = enc.Encode(&CSRResponse{
+	// 	Status: 0,
+	// 	Cert:   cert,
+	// })
+
+	w.Write([]byte("SUCCESS"))
 }
 
 // Certificate status request handler
@@ -78,6 +142,8 @@ func csGet(w http.ResponseWriter, r *http.Request) {
 {"serial": %s}`, serialNumber)))
 		return
 	}
+
+	// TODO: Check DB for existence and state of specific serial
 }
 
 // Key update request handler
@@ -85,6 +151,8 @@ func kurPost(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(`{"message": "kur POST called"}`))
+
+	// TODO: Validate current cert status and update/regen if necessary
 }
 
 // Key revocation request
@@ -92,6 +160,8 @@ func krrPost(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(`{"message": "krr POST called"}`))
+
+	// TODO: Mark certificate as revoked in the DB
 }
 
 // RESET API catch all handler
@@ -139,7 +209,6 @@ func Start(port int16) {
 
 	// Setup the REST API subrouter
 	api := r.PathPrefix("/api/v1").Subrouter()
-	api.HandleFunc("/ir", irPost).Methods(http.MethodPost)
 	api.HandleFunc("/cr", crPost).Methods(http.MethodPost)
 	api.HandleFunc("/p10cr", p10crPost).Methods(http.MethodPost)
 	api.HandleFunc("/cs/{serial}", csGet).Methods(http.MethodGet)
