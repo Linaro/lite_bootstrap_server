@@ -220,6 +220,12 @@ func kurPost(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`{"message": "kur POST called"}`))
 
 	// TODO: Validate current cert status and update/regen if necessary
+	// This should generate a new certificate for this client,
+	// based on the information from the existing certificate.
+	// This should _not_ invalidate or revoke the old certificate,
+	// as something such as an untimely power loss would cause the
+	// new key to be lost.  The old certificate is fine to use
+	// until it expires.
 }
 
 // Key revocation request
