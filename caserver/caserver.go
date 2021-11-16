@@ -1,8 +1,11 @@
 package caserver
 
 import (
+	"bytes"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -58,8 +61,8 @@ const MAX_CSR_UPLOAD_SIZE = 1024 * 4
 
 // Certification request from PKCS#10 handler
 func p10crPost(w http.ResponseWriter, r *http.Request) {
+	// Setup header for errors in JSON format
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
 
 	// Expect multipart transfer
 	err := r.ParseMultipartForm(MAX_CSR_UPLOAD_SIZE)
@@ -80,7 +83,7 @@ func p10crPost(w http.ResponseWriter, r *http.Request) {
 
 	// Check file size
 	fileSize := fileHeader.Size
-	fmt.Printf("CSR file size: %v bytes\n", fileSize)
+	fmt.Printf("Received CSR file: %v bytes\n", fileSize)
 	if fileSize > MAX_CSR_UPLOAD_SIZE {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(`{"error": "File too large"}`))
@@ -106,29 +109,41 @@ func p10crPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TOOD: Parse input CSR file and reply with certificate in PEM format
+	// fmt.Printf("Got csr: \n%s\n", fileBytes)
+
+	// Input file is in PEM format. The payload must be extracted
+	// and converted to a binary array, similar to a DER file, before
+	// passing it in to handleCSR.
+	pemin, rest := pem.Decode(fileBytes)
+	if len(rest) != 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{"error": "Invalid PEM input. Expecting one block"}`))
+		return
+	}
+	if pemin.Type != "CERTIFICATE REQUEST" {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{"error": "Expecting BEGIN CERTIFICATE REQUEST"}`))
+		return
+	}
+
+	// Process the CSR and register the certificate details
+	cert, err := handleCSR(pemin.Bytes)
+	if err != nil {
+		// TODO: Encode the error.
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{"error": "Invalid CSR"}`))
+		return
+	}
+
+	// Convert DER output to PEM
+	pemout := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: cert})
+
+	// Set the file response details
 	// MIME type = application/x-x509-user-cert or application/x-pem-file ?
-
-	fmt.Printf("Got csr: \n%s\n", fileBytes)
-
-	// cert, err := handleCSR(fileBytes)
-	// if err != nil {
-	// 	// TODO: Encode the error.
-	// 	w.WriteHeader(http.StatusBadRequest)
-	// 	w.Write([]byte(`{"error": "Invalid CSR"}`))
-	// 	return
-	// }
-
-	// w.Header().Set("Content-Type", "application/x-pem-file")
-	// w.WriteHeader(http.StatusOK)
-	// w.Write(cert)
-	// enc := json.NewEncoder(w)
-	// err = enc.Encode(&CSRResponse{
-	// 	Status: 0,
-	// 	Cert:   cert,
-	// })
-
-	w.Write([]byte("SUCCESS"))
+	w.Header().Set("Content-Disposition", "attachment; filename=USERx.der")
+	w.Header().Set("Content-Type", "application/x-pem-file")
+	w.Header().Set("Content-Length", string(len(pemout)))
+	io.Copy(w, bytes.NewReader(pemout))
 }
 
 // Certificate status request handler

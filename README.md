@@ -112,11 +112,9 @@ This will serve web pages from root, and handle REST API requests from the
 
 The REST API is a **work in progress**, and not fully implemented at present!
 
-> :white_check_mark: indicates that the endpoint is implemented
-
 API based loosely on [CMP (RFC4210)](https://tools.ietf.org/html/rfc4210).
 
-### `/api/v1/cr` Certification Request from JSON: **POST** :white_check_mark:
+### `/api/v1/cr` Certification Request from JSON: **POST**
 
 This endpoint is used to request a certificate for a new device, providing a
 **BASE64-encoded CSR payload in a JSON wrapper** with the following format:
@@ -162,14 +160,22 @@ The CA will assign and record a unique serial number for this certificate,
 which can later be used to check the certificate status via the `cs/{serial}`
 endpoint.
 
-It will reply with a certificate file in PEM format or a status error,
+It will reply with a certificate file in PEM format or a status error in JSON,
 depending on the input CSR provided.
+
+Testing this endpoint with:
 
 ```bash
 $ curl -v --cacert SERVER.crt \
   -F csrfile=@USER.csr \
-  --output - \
+  --output USER.crt \
   https://localhost:1443/api/v1/p10cr
+```
+
+should give you a `USER.crt` file in **PEM format**, which you can view via:
+
+```bash
+$ openssl x509 -in USER.crt -noout -text
 ```
 
 ### `api/v1/cs/{serial}` Certificate Status Request: **GET**
