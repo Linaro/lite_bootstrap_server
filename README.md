@@ -204,6 +204,19 @@ $ curl -v --cacert SERVER.crt \
   https://localhost:1443/api/v1/cs/1635511354607407000
 ```
 
+This endpoint will return one of three JSON response types:
+
+- `{"status": "1"}` + HTTP response code **200**: Indicating that the serial
+  number exists, and that the certificate is marked as **valid** in the CA
+  database.
+- `{"status": "0"}` + HTTP response code **200**: Indicating that the serial
+  number exists, and that the certificate is marked as **invalid** in the
+  CA database (i.e., it has been **revoked**).
+- `{"error": "<error msg>"}` + HTTP response code **400**: Indicating one
+  of the following error messages:
+  - `invalid request`: Poorly formatted serial number was provided
+  - `invalid serial number`: No certificate matching supplied serial found
+
 ### `api/v1/kur` Key Update Request: **POST**
 
 Request an update to an existing (non-revoked and non-expired) certificate. An

@@ -8,11 +8,13 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"math/big"
 	"net/http"
 	"os"
 	"strconv"
 
 	"github.com/gorilla/mux"
+	"github.com/microbuilder/linaroca/cadb"
 )
 
 type CSRRequest struct {
@@ -149,16 +151,41 @@ func p10crPost(w http.ResponseWriter, r *http.Request) {
 // Certificate status request handler
 func csGet(w http.ResponseWriter, r *http.Request) {
 	pathParams := mux.Vars(r)
+	w.Header().Set("Content-Type", "application/json")
 
-	if serialNumber, ok := pathParams["serial"]; ok {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(fmt.Sprintf(`{"message": "cs GET called"}
-{"serial": %s}`, serialNumber)))
+	serialNumber, ok := pathParams["serial"]
+
+	ser := new(big.Int)
+	ser, ok = ser.SetString(serialNumber, 10)
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{"error": "invalid request"}`))
 		return
 	}
 
-	// TODO: Check DB for existence and state of specific serial
+	db, err := cadb.Open()
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{"error": "db failure"}`))
+		return
+	}
+
+	var valid bool
+	valid, err = db.SerialValid(ser)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{"error": "invalid serial number"}`))
+		fmt.Println("cs:", err)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	if valid {
+		w.Write([]byte(`{"status": "1"}`))
+	} else {
+		w.Write([]byte(`{"status": "0"}`))
+	}
+	return
 }
 
 // Key update request handler
@@ -179,7 +206,7 @@ func krrPost(w http.ResponseWriter, r *http.Request) {
 	// TODO: Mark certificate as revoked in the DB
 }
 
-// RESET API catch all handler
+// REST API catch all handler
 func notFound(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusNotFound)

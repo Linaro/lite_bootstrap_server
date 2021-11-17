@@ -1,7 +1,9 @@
 package cadb
 
 import (
+	"database/sql"
 	"errors"
+	"fmt"
 	"math/big"
 	"time"
 )
@@ -65,7 +67,21 @@ func (conn *Conn) tryGetSerial() (*big.Int, error) {
 // AddCert adds a newly generated certificate to the database.
 func (conn *Conn) AddCert(id string, serial *big.Int, keyId []byte, expiry time.Time, cert []byte) error {
 	// TODO: Inside of transaction.
-	_, err := conn.db.Exec(`INSERT INTO certs (id, serial, keyid, expiry, cert) VALUES (?, ?, ?, ?, ?)`,
-		id, serial.Int64(), keyId, expiry, cert)
+	_, err := conn.db.Exec(`INSERT INTO certs (id, serial, keyid, expiry, cert, valid) VALUES (?, ?, ?, ?, ?, ?)`,
+		id, serial.Int64(), keyId, expiry, cert, 1)
 	return err
+}
+
+// SerialValid checks if a valid certificate exists for the specified serial
+func (conn *Conn) SerialValid(serial *big.Int) (bool, error) {
+	var valid bool
+
+	if err := conn.db.QueryRow("SELECT valid FROM certs WHERE serial = ?",
+		serial.String()).Scan(&valid); err != nil {
+		if err == sql.ErrNoRows {
+			return false, fmt.Errorf("serial %d: unknown certificate", serial)
+		}
+		return false, fmt.Errorf("serial %d: %s", serial, err)
+	}
+	return valid, nil
 }
