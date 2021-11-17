@@ -22,6 +22,7 @@ var schema = []string{
 		keyid BLOB NOT NULL,
 		cert BLOB NOT NULL,
 		expiry DATE NOT NULL,
+		valid INTEGER NOT NULL,
 		PRIMARY KEY (id, serial))`,
 }
 

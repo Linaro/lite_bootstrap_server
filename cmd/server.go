@@ -20,5 +20,6 @@ func init() {
 	rootCmd.AddCommand(serverCmd)
 
 	// Allow a custom port number
-	serverCmd.PersistentFlags().Int16P("port", "p", 443, "Port number")
+	serverCmd.PersistentFlags().Int16P("port", "p", 1443, "CA port number")
+	serverCmd.PersistentFlags().Int16P("mport", "m", 8443, "mTLS port number")
 }
