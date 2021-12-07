@@ -275,7 +275,7 @@ We can now generate a sample CSR using the private key we just saved to
 
 ```bash
 $ openssl req -new -key USER.key -out USER.csr \
-    -subj "/O=localhost/CN=$(uuidgen | tr '[:upper:]' '[:lower:]')"
+  -subj "/O=localhost/CN=LinaroCA Device Cert - Signing/OU=$(uuidgen | tr '[:upper:]' '[:lower:]')"
 ```
 
 #### 4. Convert the CSR to JSON (`make_csr_json.go`)
@@ -350,33 +350,35 @@ $ openssl x509 -in USER.crt -noout -text
 Certificate:
     Data:
         Version: 3 (0x2)
-        Serial Number: 1601897417412085000 (0x163b1536c3768508)
+        Serial Number: 1638887524413796000 (0x16be7f852f80eea0)
     Signature Algorithm: ecdsa-with-SHA256
         Issuer: O=Linaro, LTD, CN=LinaroCA Root Cert - 2020
         Validity
-            Not Before: Oct  5 11:30:17 2020 GMT
-            Not After : Oct  5 11:30:17 2021 GMT
-        Subject: O=localhost, CN=396c7a48-a1a6-4682-ba36-70d13f3b8902
+            Not Before: Dec  7 14:32:04 2021 GMT
+            Not After : Dec  7 14:32:04 2022 GMT
+        Subject: O=localhost, OU=cb0dbc8a-2030-4799-a7af-183fddff04d7, CN=LinaroCA Device Cert - Signing
         Subject Public Key Info:
             Public Key Algorithm: id-ecPublicKey
                 Public-Key: (256 bit)
                 pub: 
-                    04:cc:75:2e:c5:4b:10:4f:f4:22:69:64:86:72:ce:
-                    af:68:71:3c:bb:1e:2b:12:d0:43:12:ef:ca:5a:5c:
-                    03:28:81:93:52:1c:07:38:56:8b:62:b5:a0:79:dc:
-                    81:6f:9e:89:b8:8f:5a:85:00:5e:0f:17:79:bf:60:
-                    1b:95:60:73:78
+                    04:27:96:8b:18:b2:48:0f:c3:15:1c:21:c4:cd:03:
+                    a5:3b:ad:d1:bc:16:93:cb:c9:51:6e:d9:03:38:36:
+                    0f:80:32:81:3a:e0:07:59:76:f2:b6:08:ce:df:62:
+                    bc:3b:6f:36:04:af:c7:97:97:84:2a:a7:17:70:77:
+                    ab:97:11:36:c4
                 ASN1 OID: prime256v1
                 NIST CURVE: P-256
         X509v3 extensions:
+            X509v3 Subject Key Identifier: 
+                82:BF:4C:02:35:45:CC:5D:AB:DF:8B:5E:40:6D:C0:9C:94:3B:DF:93
             X509v3 Authority Key Identifier: 
-                keyid:2E:8D:AD:C3:C7:00:CF:D0:FA:C5:89:A3:70:8D:21:66:56:05:DC:83
+                keyid:B1:85:4A:EF:1F:2C:8A:80:79:F9:FC:56:A8:29:DE:FA:D5:D7:F5:B6
 
     Signature Algorithm: ecdsa-with-SHA256
-         30:45:02:21:00:a5:7f:cd:de:c8:62:b4:8e:98:c7:5f:62:2e:
-         17:13:bb:7d:45:51:17:10:50:8f:19:0c:75:85:e9:4a:22:c8:
-         ae:02:20:49:18:2d:0e:20:8c:5c:19:dd:8f:b7:2f:66:e0:73:
-         38:f1:aa:9a:63:1b:6c:ae:29:a7:ad:40:b1:c5:59:e1:f8
+         30:46:02:21:00:d4:de:1c:c6:51:30:09:be:78:86:ea:ec:96:
+         0d:1e:fa:b0:cd:6f:d7:d3:2f:47:14:62:f2:54:3b:24:ff:0d:
+         4e:02:21:00:ee:50:a3:7b:9e:21:5d:c5:04:80:e4:6f:62:ce:
+         3f:e2:e3:8c:60:a6:7b:82:09:23:ae:09:dd:a1:df:ea:5c:d5
 ```
 
 #### 7. Optional: Verify the Certificate
@@ -441,7 +443,8 @@ Starting mTLS TCP server on localhost:8443
 Connection accepted from 127.0.0.1:50231
 Client certificate:
 - Issuer CN: LinaroCA Root Cert - 2020
-- Subject: CN=e8c47b42-f7fc-4dc8-b538-93496b619a3c,O=localhost
+- Subject: CN=LinaroCA Device Cert - Signing,
+           OU=cb0dbc8a-2030-4799-a7af-183fddff04d7,O=localhost
 ```
 
 ### Using an invalid client certificate

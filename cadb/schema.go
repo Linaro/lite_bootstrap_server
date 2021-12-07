@@ -18,6 +18,7 @@ var schema = []string{
 
 	// certs holds all of the certificates we've ever issued.
 	`CREATE TABLE certs (id STRING NOT NULL REFERENCES devices(id),
+		name STRING NOT NULL,
 		serial STRING NOT NULL,
 		keyid BLOB NOT NULL,
 		cert BLOB NOT NULL,
