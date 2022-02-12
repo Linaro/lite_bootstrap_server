@@ -46,8 +46,8 @@ func handleCSR(asn1Data []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	id := cert.Subject.OrganizationalUnit[0]
-	name := cert.Subject.CommonName
+	id := cert.Subject.CommonName
+	name := cert.Subject.OrganizationalUnit[0]
 	err = db.AddCert(id, name, ser, cert.SubjectKeyId, expiry, signedCert)
 	if err != nil {
 		fmt.Printf("Add cert err: %v\n", err)
