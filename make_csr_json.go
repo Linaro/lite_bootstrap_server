@@ -1,3 +1,4 @@
+//go:build never
 // +build never
 
 // This program reads a user CSR key (generated with openssl,
@@ -7,7 +8,7 @@
 //    openssl req -new -key USER.key -out USER.csr \
 //       -subj "/O=Orgname/CN=396c7a48-a1a6-4682-ba36-70d13f3b8902"
 //
-// The CN of the subject of the key should be the uinque identifier
+// The CN of the subject of the key should be the unique identifier
 // for the device being simulated.
 //
 // This program reads that file, and outputs a json csr request

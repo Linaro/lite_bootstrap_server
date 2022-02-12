@@ -275,7 +275,7 @@ We can now generate a sample CSR using the private key we just saved to
 
 ```bash
 $ openssl req -new -key USER.key -out USER.csr \
-  -subj "/O=localhost/CN=LinaroCA Device Cert - Signing/OU=$(uuidgen | tr '[:upper:]' '[:lower:]')"
+  -subj "/O=localhost/CN=$(uuidgen | tr '[:upper:]' '[:lower:]')/OU=LinaroCA Device Cert - Signing"
 ```
 
 #### 4. Convert the CSR to JSON (`make_csr_json.go`)
@@ -356,7 +356,7 @@ Certificate:
         Validity
             Not Before: Dec  7 14:32:04 2021 GMT
             Not After : Dec  7 14:32:04 2022 GMT
-        Subject: O=localhost, OU=cb0dbc8a-2030-4799-a7af-183fddff04d7, CN=LinaroCA Device Cert - Signing
+        Subject: O=localhost, OU=LinaroCA Device Cert - Signing, CN=cb0dbc8a-2030-4799-a7af-183fddff04d7
         Subject Public Key Info:
             Public Key Algorithm: id-ecPublicKey
                 Public-Key: (256 bit)
