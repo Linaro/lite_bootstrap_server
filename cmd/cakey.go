@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 )
 
@@ -12,7 +10,7 @@ var cakeyCmd = &cobra.Command{
 	Short: "CA key management",
 	Long:  `Management and generation of the certificate authority key.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("cakey called")
+		cmd.Usage()
 	},
 }
 
