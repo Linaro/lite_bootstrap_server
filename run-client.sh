@@ -7,7 +7,7 @@ openssl ecparam -name prime256v1 -genkey -out USER.key
 
 # Generate a user CSR with a random UUID
 openssl req -new -key USER.key -out USER.csr \
-    -subj "/O=$HOSTNAME/CN=$(uuidgen | tr '[:upper:]' '[:lower:]')"
+    -subj "/O=$HOSTNAME/CN=$(uuidgen | tr '[:upper:]' '[:lower:]')/OU=LinaroCA Device Cert - Signing"
 
 # Convert CSR to JSON
 go run make_csr_json.go
