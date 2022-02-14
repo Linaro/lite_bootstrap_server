@@ -10,7 +10,7 @@ openssl req -new -key USER.key -out USER.csr \
     -subj "/O=$HOSTNAME/CN=$(uuidgen | tr '[:upper:]' '[:lower:]')/OU=LinaroCA Device Cert - Signing"
 
 # Convert CSR to JSON
-go run make_csr_json.go
+go run make_csr_json.go || exit 1
 
 echo "HTTP cert, CA cert and USER CSR generated."
 

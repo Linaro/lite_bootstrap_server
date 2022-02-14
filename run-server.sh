@@ -3,7 +3,7 @@
 HOSTNAME=localhost
 
 # Build linaroca
-go build
+go build || exit 1
 
 # Clean up previous artifacts
 rm CA.* SERVER.* USER.*
