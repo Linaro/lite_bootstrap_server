@@ -9,9 +9,6 @@ var cakeyCmd = &cobra.Command{
 	Use:   "cakey",
 	Short: "CA key management",
 	Long:  `Management and generation of the certificate authority key.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		cmd.Usage()
-	},
 }
 
 func init() {

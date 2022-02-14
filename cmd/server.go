@@ -9,9 +9,6 @@ var serverCmd = &cobra.Command{
 	Short: "HTTPS server management",
 	Long: `Starts the HTTPS server and REST API that can be used to sign new
 certificate signing requests (CSRs), and verify previous device registrations.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		cmd.Usage()
-	},
 }
 
 func init() {
