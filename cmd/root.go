@@ -59,6 +59,7 @@ func initConfig() {
 		}
 
 		// Search config in home directory with name ".linaroca" (without extension).
+		viper.AddConfigPath(".")
 		viper.AddConfigPath(home)
 		viper.SetConfigName(".linaroca")
 	}
