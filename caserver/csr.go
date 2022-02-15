@@ -21,11 +21,6 @@ func handleCSR(asn1Data []byte) ([]byte, error) {
 	// TODO: Need to validate all of the information from the
 	// certificate request.
 
-	db, err := cadb.Open()
-	if err != nil {
-		return nil, err
-	}
-
 	ser, err := db.GetSerial()
 
 	expiry := time.Now().AddDate(1, 0, 0)
