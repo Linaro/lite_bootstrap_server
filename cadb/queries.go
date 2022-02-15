@@ -66,9 +66,39 @@ func (conn *Conn) tryGetSerial() (*big.Int, error) {
 
 // AddCert adds a newly generated certificate to the database.
 func (conn *Conn) AddCert(id string, name string, serial *big.Int, keyId []byte, expiry time.Time, cert []byte) error {
-	// TODO: Inside of transaction.
-	_, err := conn.db.Exec(`INSERT INTO certs (id, name, serial, keyid, expiry, cert, valid) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+	tx, err := conn.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	// Query the device database to see if we need to create an
+	// entry for it.
+	row := tx.QueryRow(`SELECT COUNT(*) FROM devices WHERE id = ?`, id)
+	var count int
+	err = row.Scan(&count)
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	if count == 0 {
+		_, err = tx.Exec(`INSERT INTO devices (id, registered) VALUES (?, ?)`,
+			id, 0)
+		if err != nil {
+			_ = tx.Rollback()
+			return err
+		}
+	}
+
+	// Record the certificate as associated with this device.
+	_, err = tx.Exec(`INSERT INTO certs (id, name, serial, keyid, expiry, cert, valid) VALUES (?, ?, ?, ?, ?, ?, ?)`,
 		id, name, serial.Int64(), keyId, expiry, cert, 1)
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	err = tx.Commit()
 	return err
 }
 
