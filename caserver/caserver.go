@@ -264,12 +264,12 @@ func Start(port int16) {
 	r.HandleFunc("/", home)
 
 	// Make sure the server key and certificate exist
-	if !fileExists("SERVER.key") || !fileExists("SERVER.crt") {
+	if !fileExists("certs/SERVER.key") || !fileExists("certs/SERVER.crt") {
 		log.Fatal("Server certificate and key not found. See README.md.")
 	}
 
 	fmt.Println("Starting CA server on port https://localhost:" + strconv.Itoa(int(port)))
-	err := http.ListenAndServeTLS(":"+strconv.Itoa(int(port)), "SERVER.crt", "SERVER.key", r)
+	err := http.ListenAndServeTLS(":"+strconv.Itoa(int(port)), "certs/SERVER.crt", "certs/SERVER.key", r)
 	if err != nil {
 		log.Fatal("ListenAndServeTLS: ", err)
 	}

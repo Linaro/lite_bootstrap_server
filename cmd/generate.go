@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var cafile = "CA.crt"
+var cafile = "certs/CA.crt"
 
 // generateCmd represents the generate command
 var generateCmd = &cobra.Command{

@@ -62,7 +62,7 @@ func signCert(template *x509.Certificate, pub interface{}) ([]byte, error) {
 	// TODO: This can probably share a bit of code with the root
 	// cert generation.
 
-	sig, err := signer.LoadSigningCert("CA")
+	sig, err := signer.LoadSigningCert("certs/CA")
 	if err != nil {
 		return nil, err
 	}

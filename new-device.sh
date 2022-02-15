@@ -3,37 +3,53 @@
 # Exit on any error
 set -e
 
-# Create a new testing device, and register it.
+# These steps can be followed to simulate a certificate request from a
+# hardware device.
+#
+# This test scenario calls `make_csr_json.go`, which takes a
+# certificate signing request (CSR) file, and converts it into a JSON
+# file that can be sent to the CA server using the REST API.  The
+# encoded CSR file can then be sent to the CA server using `wget`,
+# which will return the generated certificate as a JSON payload.
+
+# Please follow the steps in `setup.sh` and make sure the linaroca
+# server is running (`run-server.sh`), before running this script.
 
 HOSTNAME=localhost
 
 # Generate a device ID.  BSD's uuidgen outputs uppercase, so conver
 # that here.
 DEVID=$(uuidgen | tr '[:upper:]' '[:lower:]')
+DEVPATH=certs/$DEVID
 
 echo New device: $DEVID
 
 # Generate a private user key for this device.
-openssl ecparam -name prime256v1 -genkey -out $DEVID.key
+openssl ecparam -name prime256v1 -genkey -out $DEVPATH.key
 
 # Generate the CSR for this key.
 openssl req -new \
-	-key $DEVID.key \
-	-out $DEVID.csr \
+	-key $DEVPATH.key \
+	-out $DEVPATH.csr \
 	-subj "/O=$HOSTNAME/CN=$DEVID/OU=LinaroCA Device Cert - Signing"
 
 # Convert this CSR to json.
-go run make_csr_json.go -in $DEVID.csr -out $DEVID.json
+go run make_csr_json.go -in $DEVPATH.csr -out $DEVPATH.json
 
 # Submit the CSR.
-wget --ca-certificate=SERVER.crt \
-	--post-file $DEVID.json \
+wget --ca-certificate=certs/SERVER.crt \
+	--post-file $DEVPATH.json \
 	https://localhost:1443/api/v1/cr \
-	-O $DEVID.rsp
+	-O $DEVPATH.rsp
 
-# Convert it to DER then PEM.
-jq -r ".Cert" < $DEVID.rsp | base64 --decode > $DEVID.der
-openssl x509 -in $DEVID.der -inform DER -out $DEVID.crt -outform PEM
+# When this is successfully processed by the CA, it will return a DER
+# encoded certificate enclosed in a JSON wrapper.  The following
+# commands will convert this to a PEM-encoded certificate file.
+jq -r ".Cert" < $DEVPATH.rsp | base64 --decode > $DEVPATH.der
+openssl x509 -in $DEVPATH.der -inform DER -out $DEVPATH.crt -outform PEM
 
 # Display the certificate
-openssl x509 -in $DEVID.crt -noout -text
+openssl x509 -in $DEVPATH.crt -noout -text
+
+# Verify the generated certificate against the CA.
+openssl verify -CAfile certs/CA.crt $DEVPATH.crt
