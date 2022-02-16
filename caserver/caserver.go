@@ -249,6 +249,8 @@ func Start(port int16) {
 		log.Fatal("Unable to open CADB.db database")
 	}
 
+	go registration()
+
 	r := mux.NewRouter()
 
 	// Setup the REST API subrouter

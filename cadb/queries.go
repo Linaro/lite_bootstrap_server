@@ -115,3 +115,48 @@ func (conn *Conn) SerialValid(serial *big.Int) (bool, error) {
 	}
 	return valid, nil
 }
+
+// UnregisteredDevices returns a list of devices that have not been
+// registered with the cloud.  This may need to be extended to return
+// certificate information, if we add support for a cloud service that
+// does not support signed certificates.
+func (conn *Conn) UnregisteredDevices() ([]string, error) {
+	var result []string
+
+	rows, err := conn.db.Query(`SELECT devices.id FROM certs LEFT JOIN devices
+		WHERE registered = 0`)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		var id string
+		err = rows.Scan(&id)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, id)
+	}
+
+	return result, nil
+}
+
+// MarkRegistered indicates that the given device has successfully
+// been marked as registered with the Cloud service.
+func (conn *Conn) MarkRegistered(device string) error {
+	tx, err := conn.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(`UPDATE devices
+		SET registered = 1
+		WHERE id = ?`, device)
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	err = tx.Commit()
+	return err
+}

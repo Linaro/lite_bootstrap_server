@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/microbuilder/linaroca/cadb"
 	"github.com/microbuilder/linaroca/signer"
 )
 
