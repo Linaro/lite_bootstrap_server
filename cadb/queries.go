@@ -124,7 +124,7 @@ func (conn *Conn) UnregisteredDevices() ([]string, error) {
 	var result []string
 
 	rows, err := conn.db.Query(`SELECT devices.id FROM certs LEFT JOIN devices
-		WHERE registered = 0`)
+		WHERE certs.id = devices.id AND registered = 0`)
 	if err != nil {
 		return nil, err
 	}
