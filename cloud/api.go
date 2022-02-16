@@ -24,9 +24,8 @@ func GetService(name string) (CloudService, error) {
 type azureService struct {
 }
 
-// TODO: Make this configurable
-var hubName string = "davidb-zephyr"
-var resourceGroup string = "IoT"
+var HubName string = "hubname"
+var ResourceGroup string = "resourcegroup"
 
 func (s *azureService) Register(device string) error {
 
@@ -34,8 +33,8 @@ func (s *azureService) Register(device string) error {
 		"iot", "hub", "device-identity", "create",
 		"--device-id", device,
 		"--auth-method", "x509_ca",
-		"--resource-group", resourceGroup,
-		"--hub-name", hubName)
+		"--resource-group", ResourceGroup,
+		"--hub-name", HubName)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 	err := cmd.Run()

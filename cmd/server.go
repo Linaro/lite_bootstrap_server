@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/microbuilder/linaroca/cloud"
 	"github.com/spf13/cobra"
 )
 
@@ -17,4 +18,8 @@ func init() {
 	// Allow a custom port number
 	serverCmd.PersistentFlags().Int16P("port", "p", 1443, "CA port number")
 	serverCmd.PersistentFlags().Int16P("mport", "m", 8443, "mTLS port number")
+
+	// Configure the cloud service.
+	serverCmd.PersistentFlags().StringVar(&cloud.HubName, "hubname", "hubname", "Azure Hub Name")
+	serverCmd.PersistentFlags().StringVar(&cloud.ResourceGroup, "resourcegroup", "resourcegroup", "Azure Resource Group")
 }
