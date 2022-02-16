@@ -4,6 +4,8 @@ import (
 	"errors"
 	"os"
 	"os/exec"
+
+	"github.com/spf13/viper"
 )
 
 type CloudService interface {
@@ -24,17 +26,16 @@ func GetService(name string) (CloudService, error) {
 type azureService struct {
 }
 
-var HubName string = "hubname"
-var ResourceGroup string = "resourcegroup"
-
 func (s *azureService) Register(device string) error {
+	hubName := viper.GetString("server.hubname")
+	resourceGroup := viper.GetString("server.resourcegroup")
 
 	cmd := exec.Command("az",
 		"iot", "hub", "device-identity", "create",
 		"--device-id", device,
 		"--auth-method", "x509_ca",
-		"--resource-group", ResourceGroup,
-		"--hub-name", HubName)
+		"--resource-group", resourceGroup,
+		"--hub-name", hubName)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 	err := cmd.Run()
