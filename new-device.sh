@@ -53,3 +53,9 @@ openssl x509 -in $DEVPATH.crt -noout -text
 
 # Verify the generated certificate against the CA.
 openssl verify -CAfile certs/CA.crt $DEVPATH.crt
+
+# Delete the files that aren't needed
+rm $DEVPATH.csr
+rm $DEVPATH.der
+rm $DEVPATH.json
+rm $DEVPATH.rsp
