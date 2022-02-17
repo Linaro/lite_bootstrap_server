@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var serverCmd = &cobra.Command{
@@ -17,4 +18,13 @@ func init() {
 	// Allow a custom port number
 	serverCmd.PersistentFlags().Int16P("port", "p", 1443, "CA port number")
 	serverCmd.PersistentFlags().Int16P("mport", "m", 8443, "mTLS port number")
+
+	// Configure the cloud service.
+	serverCmd.PersistentFlags().String("hubname", "hubname", "Azure Hub Name")
+	serverCmd.PersistentFlags().String("resourcegroup", "resourcegroup", "Azure Resource Group")
+
+	viper.BindPFlag("server.hubname", serverCmd.PersistentFlags().Lookup("hubname"))
+	viper.BindPFlag("server.resourcegroup", serverCmd.PersistentFlags().Lookup("resourcegroup"))
+	viper.BindPFlag("server.port", serverCmd.PersistentFlags().Lookup("port"))
+	viper.BindPFlag("server.mport", serverCmd.PersistentFlags().Lookup("mport"))
 }

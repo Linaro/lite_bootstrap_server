@@ -42,14 +42,14 @@ func handleConnection(c net.Conn) {
 func StartTCP(port int16) {
 	// Create a certificate pool with the CA certificate
 	certPool := x509.NewCertPool()
-	caCert, err := ioutil.ReadFile("CA.crt")
+	caCert, err := ioutil.ReadFile("certs/CA.crt")
 	if err != nil {
 		log.Fatal(err)
 	}
 	certPool.AppendCertsFromPEM(caCert)
 
 	// Load server key pair
-	cer, err := tls.LoadX509KeyPair("SERVER.crt", "SERVER.key")
+	cer, err := tls.LoadX509KeyPair("certs/SERVER.crt", "certs/SERVER.key")
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -12,9 +12,10 @@ var schema = []string{
 		value STRING NOT NULL)`,
 
 	// devices holds all devices known to the system.  The id is
-	// the identifier from the CSR.  Presumably, additional
-	// information can be stored here.
-	`CREATE TABLE devices (id STRING PRIMARY KEY)`,
+	// the identifier from the CSR.  `registered` indicates that
+	// the service considers this to be a valid device.
+	`CREATE TABLE devices (id STRING PRIMARY KEY,
+		registered INTEGER NOT NULL)`,
 
 	// certs holds all of the certificates we've ever issued.
 	`CREATE TABLE certs (id STRING NOT NULL REFERENCES devices(id),
@@ -27,7 +28,7 @@ var schema = []string{
 		PRIMARY KEY (id, serial))`,
 }
 
-const schemaVersion = "20201027a"
+const schemaVersion = "20220215a"
 
 func (conn *Conn) checkSchema() error {
 	// Query the settings table for the schema version.
