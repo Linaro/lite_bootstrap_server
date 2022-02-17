@@ -3,6 +3,7 @@ package caserver
 import (
 	"crypto/x509"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/microbuilder/linaroca/signer"
@@ -16,6 +17,7 @@ func handleCSR(asn1Data []byte) ([]byte, error) {
 		fmt.Printf("Error: %s\n", err)
 		return nil, err
 	}
+	log.Printf("Received CSR: %v\n", csr.Subject)
 
 	// TODO: Need to validate all of the information from the
 	// certificate request.
@@ -30,9 +32,6 @@ func handleCSR(asn1Data []byte) ([]byte, error) {
 		NotAfter:     expiry,
 		// TODO: Extensions that make sense to us.
 	}
-
-	// fmt.Printf("CSR: %v\n", csr)
-	// fmt.Printf("Cert: %v\n", cert)
 
 	signedCert, err := signCert(cert, csr.PublicKey)
 	if err != nil {
