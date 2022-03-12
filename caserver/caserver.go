@@ -2,7 +2,6 @@ package caserver
 
 import (
 	"bytes"
-	"encoding/json"
 	"encoding/pem"
 	"fmt"
 	"io"
@@ -13,6 +12,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/fxamacker/cbor/v2"
 	"github.com/gorilla/mux"
 	"github.com/microbuilder/linaroca/cadb"
 	"github.com/microbuilder/linaroca/protocol"
@@ -32,9 +32,9 @@ func irPost(w http.ResponseWriter, r *http.Request) {
 
 // Certification request handler
 func crPost(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/cbor")
 
-	dec := json.NewDecoder(r.Body)
+	dec := cbor.NewDecoder(r.Body)
 	var req protocol.CSRRequest
 	err := dec.Decode(&req)
 	if err != nil {
@@ -53,9 +53,9 @@ func crPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/cbor")
 	w.WriteHeader(http.StatusOK)
-	enc := json.NewEncoder(w)
+	enc := cbor.NewEncoder(w)
 	err = enc.Encode(&protocol.CSRResponse{
 		Status: 0,
 		Cert:   cert,
