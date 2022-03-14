@@ -46,7 +46,7 @@ wget --ca-certificate=certs/SERVER.crt \
 # When this is successfully processed by the CA, it will return a DER
 # encoded certificate enclosed in a JSON wrapper.  The following
 # commands will convert this to a PEM-encoded certificate file.
-go run get_cert_cbor.go -in $DEVPATH.rsp -out $DEVPATH.pem
+go run get_cert_cbor.go -in $DEVPATH.rsp -out $DEVPATH.crt
 
 # Display the certificate
 openssl x509 -in $DEVPATH.crt -noout -text
