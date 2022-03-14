@@ -39,6 +39,7 @@ go run make_csr_cbor.go -in $DEVPATH.csr -out $DEVPATH.cbor
 # Submit the CSR.
 wget --ca-certificate=certs/SERVER.crt \
 	--post-file $DEVPATH.cbor \
+	--header "Content-Type: application/cbor" \
 	https://localhost:1443/api/v1/cr \
 	-O $DEVPATH.rsp
 
