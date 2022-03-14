@@ -2,6 +2,7 @@ package caserver
 
 import (
 	"bytes"
+	"encoding/json"
 	"encoding/pem"
 	"fmt"
 	"io"
@@ -32,11 +33,29 @@ func irPost(w http.ResponseWriter, r *http.Request) {
 
 // Certification request handler
 func crPost(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/cbor")
+	use_cbor := false
+	switch r.Header.Get("Content-Type") {
+	case "application/cbor":
+		use_cbor = true
+	case "application/json":
+		//
+	default:
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{"error": "Bad request"}`))
+		return
+	}
 
-	dec := cbor.NewDecoder(r.Body)
+	var err error
 	var req protocol.CSRRequest
-	err := dec.Decode(&req)
+	if use_cbor {
+		w.Header().Set("Content-Type", "application/cbor")
+		dec := cbor.NewDecoder(r.Body)
+		err = dec.Decode(&req)
+	} else {
+		w.Header().Set("Content-Type", "application/json")
+		dec := json.NewDecoder(r.Body)
+		err = dec.Decode(&req)
+	}
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(`{"error": "Bad request"}`))
@@ -53,13 +72,23 @@ func crPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/cbor")
-	w.WriteHeader(http.StatusOK)
-	enc := cbor.NewEncoder(w)
-	err = enc.Encode(&protocol.CSRResponse{
-		Status: 0,
-		Cert:   cert,
-	})
+	if use_cbor {
+		w.Header().Set("Content-Type", "application/cbor")
+		w.WriteHeader(http.StatusOK)
+		enc := cbor.NewEncoder(w)
+		err = enc.Encode(&protocol.CSRResponse{
+			Status: 0,
+			Cert:   cert,
+		})
+	} else {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		enc := json.NewEncoder(w)
+		err = enc.Encode(&protocol.CSRResponse{
+			Status: 0,
+			Cert:   cert,
+		})
+	}
 }
 
 // Maximum file size for uploaded CSRs = 4 KB
