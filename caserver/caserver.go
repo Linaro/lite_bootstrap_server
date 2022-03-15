@@ -41,7 +41,7 @@ func crPost(w http.ResponseWriter, r *http.Request) {
 		//
 	default:
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`{"error": "Bad request"}`))
+		w.Write([]byte(`{"error": "Bad request: Content-Type must be application/cbor or application/json"}`))
 		return
 	}
 
@@ -58,7 +58,7 @@ func crPost(w http.ResponseWriter, r *http.Request) {
 	}
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`{"error": "Bad request"}`))
+		w.Write([]byte(`{"error": "Bad request: POST data did not match specified Content-Type"}`))
 		return
 	}
 
