@@ -33,20 +33,20 @@ openssl req -new \
 	-out $DEVPATH.csr \
 	-subj "/O=$HOSTNAME/CN=$DEVID/OU=LinaroCA Device Cert - Signing"
 
-# Convert this CSR to json.
-go run make_csr_json.go -in $DEVPATH.csr -out $DEVPATH.json
+# Convert this CSR to cbor.
+go run make_csr_cbor.go -in $DEVPATH.csr -out $DEVPATH.cbor
 
 # Submit the CSR.
 wget --ca-certificate=certs/SERVER.crt \
-	--post-file $DEVPATH.json \
+	--post-file $DEVPATH.cbor \
+	--header "Content-Type: application/cbor" \
 	https://localhost:1443/api/v1/cr \
 	-O $DEVPATH.rsp
 
 # When this is successfully processed by the CA, it will return a DER
 # encoded certificate enclosed in a JSON wrapper.  The following
 # commands will convert this to a PEM-encoded certificate file.
-jq -r ".Cert" < $DEVPATH.rsp | base64 --decode > $DEVPATH.der
-openssl x509 -in $DEVPATH.der -inform DER -out $DEVPATH.crt -outform PEM
+go run get_cert_cbor.go -in $DEVPATH.rsp -out $DEVPATH.crt
 
 # Display the certificate
 openssl x509 -in $DEVPATH.crt -noout -text

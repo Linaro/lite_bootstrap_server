@@ -11,31 +11,31 @@
 // The CN of the subject of the key should be the unique identifier
 // for the device being simulated.
 //
-// This program reads that file, and outputs a json csr request
+// This program reads that file, and outputs a cbor csr request
 // appropriate to give the server.
 //
 // This request can be given to the server (assuming port 1443) with
 //
 //    wget --ca-certificate=SERVER.crt \
-//        --post-file USER.json \
+//        --post-file USER.cbor \
 //        https://localhost:1443/api/v1/cr
 
 package main
 
 import (
-	"encoding/json"
 	"encoding/pem"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
 
+	"github.com/fxamacker/cbor/v2"
 	"github.com/microbuilder/linaroca/protocol"
 )
 
 var (
 	inFile  = flag.String("in", "USER.csr", "Name of input csr file")
-	outFile = flag.String("out", "USER.json", "Name of output json")
+	outFile = flag.String("out", "USER.cbor", "Name of output cbor")
 )
 
 func main() {
@@ -71,7 +71,8 @@ func run() error {
 	req := protocol.CSRRequest{
 		CSR: pem.Bytes,
 	}
-	encoded, err := json.Marshal(&req)
+
+	encoded, err := cbor.Marshal(&req)
 	if err != nil {
 		return nil
 	}

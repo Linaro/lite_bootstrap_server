@@ -113,7 +113,63 @@ The REST API is a **work in progress**, and not fully implemented at present!
 
 API based loosely on [CMP (RFC4210)](https://tools.ietf.org/html/rfc4210).
 
-## `/api/v1/cr` Certification Request from JSON: **POST**
+## `/api/v1/cr` Certification Request
+
+This API requires the Content-Type to be set on the post data, it will
+return an error if given the default Content-Type, and it should be
+set to either `application/cbor` or `application/json`.  The request
+is identical, and merely differs in how the data is encoded.  A
+request made in cbor will have a cbor reply, as will json.
+
+The content type can be specified with wget by adding:
+
+```
+--header "Content-Type: application/cbor"
+```
+
+as an argument to wget.  The content type must match the encoding of
+the posted file.
+
+### `/api/v1/cr` Certification Request from CBOR: **POST**
+
+This endpoint is used to request a certificate for a new device,
+providing a CSR payload wrapped in a single CBOR array:
+
+```cddl
+[ bstr ]
+```
+
+> You can generate the expected CBOR payload from a CSR file via the
+> `make_csr_cbor.go` helper described elsewhere in this document.
+
+```cbor
+[
+  b64'MIH9MIGlAgEAMEMxEjAQBgNVBAoMCWxvY2FsaG9zdDEtMCsGA1UEAwwkZThjNDdiNDItZjdmYy00ZGM4LWI1MzgtOTM0OTZiNjE5YTNjMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEJ5aLGLJID8MVHCHEzQOlO63RvBaTy8lRbtkDODYPgDKBOuAHWXbytgjO32K8O282BK/Hl5eEKqcXcHerlxE2xKAAMAoGCCqGSM49BAMCA0cAMEQCIEFoH+NV9jXJA0PmctbCQ7FOBnE/aT9hmqBuvBq2kIhuAiAyKGAUIAzHDBZ+lY6WaJGh/56rzr4KprVtNYFGLHLs1g=='
+]
+```
+
+The CA will assign and record a unique serial number for this certificate,
+which can later be used to check the certificate status via the `cs/{serial}`
+endpoint.
+
+It will reply with a CBOR result in the following format:
+
+```cddl
+{
+   1 => int,   ; Status.
+   2 => bstr,  ; Certificate
+}
+```
+
+For example:
+```cbor
+{
+  0: 0,
+  1: b64'MIIBtjCCAVugAwIBAgIIFrKA6WV+D5gwCgYIKoZIzj0EAwIwOjEUMBIGA1UEChMLTGluYXJvLCBMVEQxIjAgBgNVBAMTGUxpbmFyb0NBIFJvb3QgQ2VydCAtIDIwMjAwHhcNMjExMDI5MTI0MjM0WhcNMjIxMDI5MTI0MjM0WjBDMRIwEAYDVQQKEwlsb2NhbGhvc3QxLTArBgNVBAMTJGU4YzQ3YjQyLWY3ZmMtNGRjOC1iNTM4LTkzNDk2YjYxOWEzYzBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABCeWixiySA/DFRwhxM0DpTut0bwWk8vJUW7ZAzg2D4AygTrgB1l28rYIzt9ivDtvNgSvx5eXhCqnF3B3q5cRNsSjQjBAMB0GA1UdDgQWBBSCv0wCNUXMXavfi15AbcCclDvfkzAfBgNVHSMEGDAWgBSxhUrvHyyKgHn5/FaoKd761df1tjAKBggqhkjOPQQDAgNJADBGAiEAjDVYvr1qBfvc0VFZcFLxwO/5XvnBh2jZFpL9ykKsCw8CIQDF3ne7yokRAHt0nn35CW/J3FclGYH9rBVCZr7FU+pzHg==',
+}
+```
+
+### `/api/v1/cr` Certification Request from JSON: **POST**
 
 This endpoint is used to request a certificate for a new device, providing a
 **BASE64-encoded CSR payload in a JSON wrapper** with the following format:

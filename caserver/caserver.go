@@ -13,6 +13,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/fxamacker/cbor/v2"
 	"github.com/gorilla/mux"
 	"github.com/microbuilder/linaroca/cadb"
 	"github.com/microbuilder/linaroca/protocol"
@@ -32,14 +33,32 @@ func irPost(w http.ResponseWriter, r *http.Request) {
 
 // Certification request handler
 func crPost(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
+	use_cbor := false
+	switch r.Header.Get("Content-Type") {
+	case "application/cbor":
+		use_cbor = true
+	case "application/json":
+		//
+	default:
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{"error": "Bad request: Content-Type must be application/cbor or application/json"}`))
+		return
+	}
 
-	dec := json.NewDecoder(r.Body)
+	var err error
 	var req protocol.CSRRequest
-	err := dec.Decode(&req)
+	if use_cbor {
+		w.Header().Set("Content-Type", "application/cbor")
+		dec := cbor.NewDecoder(r.Body)
+		err = dec.Decode(&req)
+	} else {
+		w.Header().Set("Content-Type", "application/json")
+		dec := json.NewDecoder(r.Body)
+		err = dec.Decode(&req)
+	}
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`{"error": "Bad request"}`))
+		w.Write([]byte(`{"error": "Bad request: POST data did not match specified Content-Type"}`))
 		return
 	}
 
@@ -53,13 +72,23 @@ func crPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	enc := json.NewEncoder(w)
-	err = enc.Encode(&protocol.CSRResponse{
-		Status: 0,
-		Cert:   cert,
-	})
+	if use_cbor {
+		w.Header().Set("Content-Type", "application/cbor")
+		w.WriteHeader(http.StatusOK)
+		enc := cbor.NewEncoder(w)
+		err = enc.Encode(&protocol.CSRResponse{
+			Status: 0,
+			Cert:   cert,
+		})
+	} else {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		enc := json.NewEncoder(w)
+		err = enc.Encode(&protocol.CSRResponse{
+			Status: 0,
+			Cert:   cert,
+		})
+	}
 }
 
 // Maximum file size for uploaded CSRs = 4 KB
