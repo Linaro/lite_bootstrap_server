@@ -8,7 +8,7 @@ set -e
 # devices to request certificates later to authenticate themselves.
 
 # For now, write them to a single name
-if [ -f certs/DEVCLASS.crt -o -f certs/DEVCLASS.key ];
+if [ -f certs/BOOTSTRAP.crt -o -f certs/BOOTSTRAP.key ];
 then
 	echo "Device Class certificates seem to already be present."
 	exit 1
@@ -24,12 +24,12 @@ mkdir -p certs
 
 # This is a simple keypair, where the certificate will be known by the
 # server.
-openssl ecparam -name prime256v1 -genkey -out certs/DEVCLASS.key
+openssl ecparam -name prime256v1 -genkey -out certs/BOOTSTRAP.key
 
 # Generate the CSR
-openssl req -new -sha256 -key certs/DEVCLASS.key \
-	-out certs/DEVCLASS.csr \
-	-subj '/O=Linaro, LTD/CN=devclass-register-1'
+openssl req -new -sha256 -key certs/BOOTSTRAP.key \
+	-out certs/BOOTSTRAP.csr \
+	-subj '/O=Linaro, LTD/CN=bootstrap-register-1'
 
 # Sign it with our CA cert
 openssl x509 -req -sha256 \
@@ -38,13 +38,13 @@ openssl x509 -req -sha256 \
 	-days 3560 \
 	-CAcreateserial \
 	-CAserial certs/CA.srl \
-	-in certs/DEVCLASS.csr \
-	-out certs/DEVCLASS.crt
+	-in certs/BOOTSTRAP.csr \
+	-out certs/BOOTSTRAP.crt
 
-rm certs/DEVCLASS.csr
+rm certs/BOOTSTRAP.csr
 
 # Convert the public and private keys into C code so they can be
 # included into the app.
-sed 's/.*/"&\\r\\n"/' certs/DEVCLASS.crt > certs/devclass_crt.txt
-openssl ec -in certs/DEVCLASS.key -outform DER |
-	xxd -i > certs/devclass_key.txt
+sed 's/.*/"&\\r\\n"/' certs/BOOTSTRAP.crt > certs/bootstrap_crt.txt
+openssl ec -in certs/BOOTSTRAP.key -outform DER |
+	xxd -i > certs/bootstrap_key.txt
