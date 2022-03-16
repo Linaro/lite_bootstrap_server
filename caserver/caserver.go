@@ -307,8 +307,13 @@ func Start(port int16) {
 		log.Fatal("Server certificate and key not found. See README.md.")
 	}
 
+	server := &http.Server{
+		Addr:    ":" + strconv.Itoa(int(port)),
+		Handler: r,
+	}
+
 	fmt.Println("Starting CA server on port https://localhost:" + strconv.Itoa(int(port)))
-	err = http.ListenAndServeTLS(":"+strconv.Itoa(int(port)), "certs/SERVER.crt", "certs/SERVER.key", r)
+	err = server.ListenAndServeTLS("certs/SERVER.crt", "certs/SERVER.key")
 	if err != nil {
 		log.Fatal("ListenAndServeTLS: ", err)
 	}
