@@ -286,7 +286,7 @@ func Start(port int16) {
 		log.Fatal("Unable to open CADB.db database")
 	}
 
-	go registration()
+	// go registration()
 
 	// Create a certificate pool with the CA certificate.
 	certPool := x509.NewCertPool()
