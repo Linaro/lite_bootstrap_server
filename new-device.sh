@@ -38,6 +38,8 @@ go run make_csr_cbor.go -in $DEVPATH.csr -out $DEVPATH.cbor
 
 # Submit the CSR.
 wget --ca-certificate=certs/SERVER.crt \
+	--certificate=certs/BOOTSTRAP.crt \
+	--private-key=certs/BOOTSTRAP.key \
 	--post-file $DEVPATH.cbor \
 	--header "Content-Type: application/cbor" \
 	https://localhost:1443/api/v1/cr \
@@ -56,6 +58,6 @@ openssl verify -CAfile certs/CA.crt $DEVPATH.crt
 
 # Delete the files that aren't needed
 rm $DEVPATH.csr
-rm $DEVPATH.der
+rm $DEVPATH.cbor
 rm $DEVPATH.json
 rm $DEVPATH.rsp

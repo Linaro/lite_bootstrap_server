@@ -2,6 +2,8 @@ package caserver
 
 import (
 	"bytes"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
@@ -286,6 +288,14 @@ func Start(port int16) {
 
 	go registration()
 
+	// Create a certificate pool with the CA certificate.
+	certPool := x509.NewCertPool()
+	caCert, err := ioutil.ReadFile("certs/CA.crt")
+	if err != nil {
+		log.Fatal(err)
+	}
+	certPool.AppendCertsFromPEM(caCert)
+
 	r := mux.NewRouter()
 
 	// Setup the REST API subrouter
@@ -310,6 +320,16 @@ func Start(port int16) {
 	server := &http.Server{
 		Addr:    ":" + strconv.Itoa(int(port)),
 		Handler: r,
+
+		// The certificate will be filled in by the listen and
+		// server, but we can request/verify that there is a
+		// valid client cert specified.
+		TLSConfig: &tls.Config{
+			ClientAuth: tls.RequireAndVerifyClientCert,
+
+			ClientCAs:             certPool,
+			VerifyPeerCertificate: validatePeer,
+		},
 	}
 
 	fmt.Println("Starting CA server on port https://localhost:" + strconv.Itoa(int(port)))
@@ -317,6 +337,26 @@ func Start(port int16) {
 	if err != nil {
 		log.Fatal("ListenAndServeTLS: ", err)
 	}
+}
+
+// ValidatePeer checks the given certificates and makes sure they are
+// appropriate for requests from the bootstrap service.
+func validatePeer(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
+	if len(verifiedChains) != 1 {
+		return fmt.Errorf("Expecting a single certificate chain")
+	}
+
+	// TODO: We should probably verify the certificate chain ends
+	// with our CA, but that should always be the case.  In this
+	// case, just verify the subject has an OU of "LinaroCA
+	// Bootstrap Cert".
+	//log.Printf("cert: %#v", verifiedChains[0][0].Subject)
+	crt := verifiedChains[0][0]
+	if len(crt.Subject.OrganizationalUnit) != 1 || crt.Subject.OrganizationalUnit[0] != "LinaroCA Bootstrap Cert" {
+		return fmt.Errorf("Invalid client certificate")
+	}
+
+	return nil
 }
 
 func fileExists(filename string) bool {
