@@ -29,7 +29,7 @@ openssl ecparam -name prime256v1 -genkey -out certs/BOOTSTRAP.key
 # Generate the CSR
 openssl req -new -sha256 -key certs/BOOTSTRAP.key \
 	-out certs/BOOTSTRAP.csr \
-	-subj '/O=Linaro, LTD/CN=bootstrap-register-1'
+	-subj '/O=Linaro, LTD/CN=bootstrap-register-1/OU=LinaroCA Bootstrap Cert'
 
 # Sign it with our CA cert
 openssl x509 -req -sha256 \

@@ -2,6 +2,8 @@ package caserver
 
 import (
 	"bytes"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
@@ -220,6 +222,12 @@ func kurPost(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`{"message": "kur POST called"}`))
 
 	// TODO: Validate current cert status and update/regen if necessary
+	// This should generate a new certificate for this client,
+	// based on the information from the existing certificate.
+	// This should _not_ invalidate or revoke the old certificate,
+	// as something such as an untimely power loss would cause the
+	// new key to be lost.  The old certificate is fine to use
+	// until it expires.
 }
 
 // Key revocation request
@@ -278,7 +286,15 @@ func Start(port int16) {
 		log.Fatal("Unable to open CADB.db database")
 	}
 
-	go registration()
+	// go registration()
+
+	// Create a certificate pool with the CA certificate.
+	certPool := x509.NewCertPool()
+	caCert, err := ioutil.ReadFile("certs/CA.crt")
+	if err != nil {
+		log.Fatal(err)
+	}
+	certPool.AppendCertsFromPEM(caCert)
 
 	r := mux.NewRouter()
 
@@ -301,11 +317,46 @@ func Start(port int16) {
 		log.Fatal("Server certificate and key not found. See README.md.")
 	}
 
+	server := &http.Server{
+		Addr:    ":" + strconv.Itoa(int(port)),
+		Handler: r,
+
+		// The certificate will be filled in by the listen and
+		// server, but we can request/verify that there is a
+		// valid client cert specified.
+		TLSConfig: &tls.Config{
+			ClientAuth: tls.RequireAndVerifyClientCert,
+
+			ClientCAs:             certPool,
+			VerifyPeerCertificate: validatePeer,
+		},
+	}
+
 	fmt.Println("Starting CA server on port https://localhost:" + strconv.Itoa(int(port)))
-	err = http.ListenAndServeTLS(":"+strconv.Itoa(int(port)), "certs/SERVER.crt", "certs/SERVER.key", r)
+	err = server.ListenAndServeTLS("certs/SERVER.crt", "certs/SERVER.key")
 	if err != nil {
 		log.Fatal("ListenAndServeTLS: ", err)
 	}
+}
+
+// ValidatePeer checks the given certificates and makes sure they are
+// appropriate for requests from the bootstrap service.
+func validatePeer(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
+	if len(verifiedChains) != 1 {
+		return fmt.Errorf("Expecting a single certificate chain")
+	}
+
+	// TODO: We should probably verify the certificate chain ends
+	// with our CA, but that should always be the case.  In this
+	// case, just verify the subject has an OU of "LinaroCA
+	// Bootstrap Cert".
+	//log.Printf("cert: %#v", verifiedChains[0][0].Subject)
+	crt := verifiedChains[0][0]
+	if len(crt.Subject.OrganizationalUnit) != 1 || crt.Subject.OrganizationalUnit[0] != "LinaroCA Bootstrap Cert" {
+		return fmt.Errorf("Invalid client certificate")
+	}
+
+	return nil
 }
 
 func fileExists(filename string) bool {
