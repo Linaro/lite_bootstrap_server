@@ -21,6 +21,7 @@ func handleConnection(c net.Conn) {
 	}
 
 	// Start the TLS handshake process
+	// This will also validate the client cert via validatePeer
 	if err := tlsConn.Handshake(); err != nil {
 		fmt.Println("Client handshake error:", err)
 		return
@@ -64,6 +65,8 @@ func StartTCP(port int16) {
 		Certificates: []tls.Certificate{cer},
 		// Alt: RequestClientCert
 		ClientAuth: tls.RequireAndVerifyClientCert,
+		// Callback to verify client cert details
+		VerifyPeerCertificate: validatePeer,
 	}
 
 	// Listen for TCP connections
@@ -86,4 +89,17 @@ func StartTCP(port int16) {
 		// Concurrent connection handling
 		go handleConnection(conn)
 	}
+}
+
+// ValidatePeer checks the given certificates and makes sure they are
+// appropriate for requests to this TCP server
+func validatePeer(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
+	if len(verifiedChains) != 1 {
+		return fmt.Errorf("expecting a single certificate chain")
+	}
+
+	// TODO: Validate client certificate UUID is valid in cadb
+	// log.Printf("cert: %#v", verifiedChains[0][0].Subject)
+
+	return nil
 }
