@@ -1,8 +1,11 @@
 #! /bin/bash
 
 # Hostname for certificates.  'localhost' is good for testing,
-# especially if you are behind a NAT.
-HOSTNAME=localhost
+# especially if you are behind a NAT.  However, it won't allow access
+# from a remote device.  In order for this to work, you'll need to set
+# HOSTNAME to an actual DNS name that resolves to this host.  If
+# everything is behind a NAT, the name can resolve to a local address.
+: ${HOSTNAME:=localhost}
 
 # Setup the Certificate Authority and server certificates.  In
 # general, this should be run once, to create these initial

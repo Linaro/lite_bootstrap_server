@@ -318,7 +318,9 @@ func Start(port int16) {
 	}
 
 	server := &http.Server{
-		Addr:    ":" + strconv.Itoa(int(port)),
+		// Use the HOSTNAME environment variable, or empty if
+		// it isn't present (the same semantics as Getenv).
+		Addr:    os.Getenv("HOSTNAME") + ":" + strconv.Itoa(int(port)),
 		Handler: r,
 
 		// The certificate will be filled in by the listen and
@@ -332,7 +334,12 @@ func Start(port int16) {
 		},
 	}
 
-	fmt.Println("Starting CA server on port https://localhost:" + strconv.Itoa(int(port)))
+	host := os.Getenv("HOSTNAME")
+	if host == "" {
+		host = "localhost"
+	}
+
+	fmt.Println("Starting CA server on port https://" + host + ":" + strconv.Itoa(int(port)))
 	err = server.ListenAndServeTLS("certs/SERVER.crt", "certs/SERVER.key")
 	if err != nil {
 		log.Fatal("ListenAndServeTLS: ", err)
