@@ -15,9 +15,10 @@ and certificate status checks based on the registered device's unique ID.
 
 ### Setup Script
 
-Three bash scripts are provided:
+Four bash scripts are provided:
 
 - `setup-ca.sh`
+- `setup-bootstrap.sh`
 - `run-server.sh`
 - `new-device.sh`
 
@@ -25,7 +26,16 @@ The first script creates the HTTP and CA keys and certificates.  This
 should only need to be run once, and, in fact, will require existing
 certs to have to be removed manually before it can be run again.
 
-The second script will start the CA server on port 1443.
+The second script creates the key pair used for device bootstrap.
+This is needed to authenticate with the CA server, and the data placed
+in `bootstrap_crt.txt` and `bootstrap_key.txt` will need to be
+included in the device.
+
+This script can be run multiple times (after removing the generated
+files), but only would need to be rerun after regenerating the CA
+cert.
+
+The third script will start the CA server on port 1443.
 
 The last script creates a new device, and registers it with this CA.
 The certificates for the device will be placed in the 'certs'
