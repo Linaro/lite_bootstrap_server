@@ -30,17 +30,30 @@ type SigningCert struct {
 // NewSigningCert builds a fresh signing certificate to use as a root
 // certificate.
 func NewSigningCert() (*SigningCert, error) {
+	// The serial number and common name will contain the current
+	// time (in UTC), which, at least for development, should make
+	// these unique.
+	now := time.Now().UTC()
+	serial := int64(now.Year())
+	serial = serial*10000 + int64(now.Month())
+	serial = serial*100 + int64(now.Day())
+	serial = serial*100 + int64(now.Hour())
+	serial = serial*100 + int64(now.Minute())
+	serial = serial*100 + int64(now.Second())
+
+	cn := "LRC - " + now.Format("20060102030405")
+
 	ca := &x509.Certificate{
 		// TODO: We need to somewhat manage these serial
 		// numbers.  Generating from date/time might work.
 		// Also, the common name will need to be unique.
-		SerialNumber: big.NewInt(2020),
+		SerialNumber: big.NewInt(serial),
 		Subject: pkix.Name{
 			Organization: []string{"Linaro, LTD"},
-			CommonName:   "LinaroCA Root Cert - 2020",
+			CommonName:   cn,
 		},
-		NotBefore:             time.Now(),
-		NotAfter:              time.Now().AddDate(1, 0, 0),
+		NotBefore:             now,
+		NotAfter:              now.AddDate(1, 0, 0),
 		BasicConstraintsValid: true,
 		IsCA:                  true,
 		ExtKeyUsage:           []x509.ExtKeyUsage{},
