@@ -15,7 +15,7 @@ set -e
 # Please follow the steps in `setup.sh` and make sure the linaroca
 # server is running (`run-server.sh`), before running this script.
 
-HOSTNAME=localhost
+: ${HOSTNAME:=localhost}
 
 # Generate a device ID.  BSD's uuidgen outputs uppercase, so conver
 # that here.
@@ -42,7 +42,7 @@ wget --ca-certificate=certs/SERVER.crt \
 	--private-key=certs/BOOTSTRAP.key \
 	--post-file $DEVPATH.cbor \
 	--header "Content-Type: application/cbor" \
-	https://localhost:1443/api/v1/cr \
+	https://$HOSTNAME:1443/api/v1/cr \
 	-O $DEVPATH.rsp
 
 # When this is successfully processed by the CA, it will return a DER

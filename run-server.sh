@@ -1,6 +1,6 @@
 #!/bin/bash
 
-HOSTNAME=localhost
+: ${HOSTNAME:=localhost}
 
 if [ ! -f certs/CA.crt -o ! -f certs/CA.key ]; then
 	echo "Server certificates not present.  Please run ./setup-ca.sh"
