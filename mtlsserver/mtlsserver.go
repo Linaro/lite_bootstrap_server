@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
+	"os"
 	"strconv"
 )
 
@@ -41,6 +42,19 @@ func handleConnection(c net.Conn) {
 
 // Starts a TCP server with mTLS authentication
 func StartTCP(port int16) {
+	// Get the hostname from the $CAHOSTNAME environment variable
+	hostname := os.Getenv("CAHOSTNAME")
+	if hostname == "" {
+		// Fall back to the system hostname (bash $HOSTNAME, zsh $HOST) if
+		// nothing is defined.
+		var err error
+		hostname, err = os.Hostname()
+		if (err != nil) || (hostname == "") {
+			// As a last resort, fall back to localhost
+			hostname = "localhost"
+		}
+	}
+
 	// Create a certificate pool with the CA certificate
 	certPool := x509.NewCertPool()
 	caCert, err := ioutil.ReadFile("certs/CA.crt")
@@ -70,8 +84,10 @@ func StartTCP(port int16) {
 	}
 
 	// Listen for TCP connections
-	fmt.Println("Starting mTLS TCP server on localhost:" + strconv.Itoa(int(port)))
-	listener, err := tls.Listen("tcp", "localhost:"+strconv.Itoa(int(port)), &config)
+	fmt.Println("Starting mTLS TCP server on " + hostname + ":" +
+		strconv.Itoa(int(port)))
+	listener, err := tls.Listen("tcp", hostname+":"+strconv.Itoa(int(port)),
+		&config)
 	if err != nil {
 		fmt.Println("Unable to start listening")
 		log.Fatal(err)

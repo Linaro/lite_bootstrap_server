@@ -3,9 +3,9 @@
 # Hostname for certificates.  'localhost' is good for testing,
 # especially if you are behind a NAT.  However, it won't allow access
 # from a remote device.  In order for this to work, you'll need to set
-# HOSTNAME to an actual DNS name that resolves to this host.  If
+# CAHOSTNAME to an actual DNS name that resolves to this host.  If
 # everything is behind a NAT, the name can resolve to a local address.
-: ${HOSTNAME:=localhost}
+: ${CAHOSTNAME:=$(hostname)}
 
 # Setup the Certificate Authority and server certificates.  In
 # general, this should be run once, to create these initial
@@ -42,7 +42,7 @@ openssl ecparam -name secp256r1 -genkey -out certs/SERVER.key
 # ensure we are talking to the right server.
 openssl req -new -sha256 -key certs/SERVER.key \
 	-out certs/SERVER.csr \
-	-subj "/O=Linaro, LTD/CN=$HOSTNAME"
+	-subj "/O=Linaro, LTD/CN=$CAHOSTNAME"
 
 # Create a config snippet to add proper extensions to this key.
 echo "subjectKeyIdentifier=hash" > exts$$.ext
@@ -50,7 +50,7 @@ echo "authorityKeyIdentifier=keyid,issuer" >> exts$$.ext
 echo "basicConstraints = critical, CA:FALSE" >> exts$$.ext
 echo "keyUsage = critical, digitalSignature" >> exts$$.ext
 echo "extendedKeyUsage = serverAuth" >> exts$$.ext
-echo "subjectAltName = DNS:$HOSTNAME" >> exts$$.ext
+echo "subjectAltName = DNS:$CAHOSTNAME" >> exts$$.ext
 
 # Sign this with the CA.
 openssl x509 -req -sha256 \
