@@ -15,7 +15,7 @@ set -e
 # Please follow the steps in `README.md` and make sure the linaroca
 # server is running (`run-server.sh`), before running this script.
 
-: ${HOSTNAME:=localhost}
+: ${CAHOSTNAME:=$(hostname)}
 
 # Generate a device ID.  BSD's uuidgen outputs uppercase, so conver
 # that here.
@@ -31,7 +31,7 @@ openssl ecparam -name prime256v1 -genkey -out $DEVPATH.key
 openssl req -new \
 	-key $DEVPATH.key \
 	-out $DEVPATH.csr \
-	-subj "/O=$HOSTNAME/CN=$DEVID/OU=LinaroCA Device Cert - Signing"
+	-subj "/O=$CAHOSTNAME/CN=$DEVID/OU=LinaroCA Device Cert - Signing"
 
 # Convert this CSR to cbor.
 go run make_csr_cbor.go -in $DEVPATH.csr -out $DEVPATH.cbor
@@ -42,7 +42,7 @@ wget --ca-certificate=certs/SERVER.crt \
 	--private-key=certs/BOOTSTRAP.key \
 	--post-file $DEVPATH.cbor \
 	--header "Content-Type: application/cbor" \
-	https://$HOSTNAME:1443/api/v1/cr \
+	https://$CAHOSTNAME:1443/api/v1/cr \
 	-O $DEVPATH.rsp
 
 # When this is successfully processed by the CA, it will return a DER

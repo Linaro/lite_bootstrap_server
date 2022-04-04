@@ -317,10 +317,22 @@ func Start(port int16) {
 		log.Fatal("Server certificate and key not found. See README.md.")
 	}
 
+	// Get the hostname from the $CAHOSTNAME environment variable
+	hostname := os.Getenv("CAHOSTNAME")
+	if hostname == "" {
+		// Fall back to the system hostname (bash $HOSTNAME, zsh $HOST) if
+		// nothing is defined.
+		var err error
+		hostname, err = os.Hostname()
+		if (err != nil) || (hostname == "") {
+			// As a last resort, fall back to localhost
+			hostname = "localhost"
+		}
+	}
+
 	server := &http.Server{
-		// Use the HOSTNAME environment variable, or empty if
-		// it isn't present (the same semantics as Getenv).
-		Addr:    os.Getenv("HOSTNAME") + ":" + strconv.Itoa(int(port)),
+		// Use the system hostname.
+		Addr:    hostname + ":" + strconv.Itoa(int(port)),
 		Handler: r,
 
 		// The certificate will be filled in by the listen and
@@ -334,12 +346,8 @@ func Start(port int16) {
 		},
 	}
 
-	host := os.Getenv("HOSTNAME")
-	if host == "" {
-		host = "localhost"
-	}
-
-	fmt.Println("Starting CA server on port https://" + host + ":" + strconv.Itoa(int(port)))
+	fmt.Println("Starting CA server on https://" + hostname + ":" +
+		strconv.Itoa(int(port)))
 	err = server.ListenAndServeTLS("certs/SERVER.crt", "certs/SERVER.key")
 	if err != nil {
 		log.Fatal("ListenAndServeTLS: ", err)
