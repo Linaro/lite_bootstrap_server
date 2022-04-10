@@ -182,7 +182,15 @@ The CA will assign and record a unique serial number for this certificate,
 which can later be used to check the certificate status via the `cs/{serial}`
 endpoint.
 
-It will reply with a CBOR result in the following format:
+#### Response
+
+Replies with a CBOR array containing `Status` and `Cert` fields, where `Cert`
+contains the BASE64-encoded certificate. 
+
+`Status` is an error code where `0` indicates success, and non-zero values
+should be treated as an error.
+
+The types used in the CBOR response are as follows:
 
 ```cddl
 {
@@ -191,7 +199,8 @@ It will reply with a CBOR result in the following format:
 }
 ```
 
-For example:
+Example:
+
 ```cbor
 {
   0: 0,
@@ -225,8 +234,13 @@ The CA will assign and record a unique serial number for this certificate,
 which can later be used to check the certificate status via the `cs/{serial}`
 endpoint.
 
-It will reply with a JSON array containing `Status` and `Cert` fields,
-where `Cert` contains the BASE64-encoded certificate:
+#### Response
+
+Replies with a JSON array containing `Status` and `Cert` fields, where `Cert`
+contains the BASE64-encoded certificate.
+
+`Status` is an error code where `0` indicates success, and non-zero values
+should be treated as an error.
 
 ```json
 {
@@ -307,28 +321,24 @@ $ curl -v --cacert certs/SERVER.crt  \
           https://MBP2021.local:1443/api/v1/cs/1648935985023194000
 ```
 
-This endpoint will return one of three response types:
+This endpoint accepts requests in cbor (`application/cbor`) or json
+(`application/json`), defaulting to JSON responses if no Content-Type is
+provided. The response Content-Type will match the request type used.
 
-- `{"status": "1"}` + HTTP response code **200**: Indicating that the serial
-  number exists, and that the certificate is marked as **valid** in the CA
-  database.
-- `{"status": "0"}` + HTTP response code **200**: Indicating that the serial
-  number exists, and that the certificate is marked as **invalid** in the
-  CA database (i.e., it has been **revoked**).
-- `{"error": "<error msg>"}` + HTTP response code **400**: Indicating one
-  of the following error messages:
+#### Responses
+
+This endpoint will return the following responses:
+
+- HTTP response code **200**
+  - `{"status": "1"}`: Indicates that the serial number exists, and that the
+    certificate is marked as **valid** in the CA database.
+  - `{"status": "0"}`: Indicates that the serial number exists, but that the
+    certificate is marked as **invalid** in the CA database (i.e., it has been
+    **revoked**).
+- HTTP response code **400** + `{"error": "<error msg>"}`, where error msg is:
   - `invalid request`: Poorly formatted serial number was provided
   - `invalid serial number`: No certificate matching supplied serial found
-
-## `api/v1/kur` Key Update Request: **POST**
-
-Request an update to an existing (non-revoked and non-expired) certificate. An
-update is a replacement certificate containing either a new subject public
-key or the current subject public key.
-
-## `api/v1/krr` Key Revocation Request: **POST**
-
-Requests the revocation of an existing certificate registration.
+  - `bad request: Content-Type must be ...`: Invalid Content-Type provided
 
 ## `api/v1/ds/{uuid}` Device Status Request: **GET**
 
@@ -346,3 +356,25 @@ $ curl -v --cacert certs/SERVER.crt  \
           --key certs/BOOTSTRAP.key  \
           https://MBP2021.local:1443/api/v1/ds/56d38f73-3f6f-4a59-86bc-d315a1ccc634
 ```
+
+#### Responses
+
+This endpoint will return the following responses:
+
+- HTTP response code **200**
+  - `{"Status":0,"Serials":null}`: No valid certs found for UUID
+  - `{"Status":1,"Serials":[1649073924922206000]}`: Valid cert(s) found for UUID
+- HTTP response code **400** + `{"error": "<error msg>"}`, where error msg is:
+  - `need a valid UUID`: Invalid or improperly formatted UUID was provided
+  - `unable to query db for UUID`: error querying for database UUID (fatal)
+  - `bad request: Content-Type must be ...`: Invalid Content-Type provided
+
+## `api/v1/kur` Key Update Request: **POST**
+
+Request an update to an existing (non-revoked and non-expired) certificate. An
+update is a replacement certificate containing either a new subject public
+key or the current subject public key.
+
+## `api/v1/krr` Key Revocation Request: **POST**
+
+Requests the revocation of an existing certificate registration.

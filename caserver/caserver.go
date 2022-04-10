@@ -187,10 +187,22 @@ func p10crPost(w http.ResponseWriter, r *http.Request) {
 // Certificate status request handler
 func csGet(w http.ResponseWriter, r *http.Request) {
 	pathParams := mux.Vars(r)
-	w.Header().Set("Content-Type", "application/json")
 
+	// Check Content-Type
+	use_cbor := false
+	switch r.Header.Get("Content-Type") {
+	case "application/cbor":
+		use_cbor = true
+	case "application/json":
+		//
+	default:
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{"error": "bad request: Content-Type must be application/cbor or application/json"}`))
+		return
+	}
+
+	// Parse serial number in request
 	serialNumber, ok := pathParams["serial"]
-
 	ser := new(big.Int)
 	ser, ok = ser.SetString(serialNumber, 10)
 	if !ok {
@@ -199,6 +211,7 @@ func csGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check DB for serial number
 	valid, err := db.SerialValid(ser)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -207,13 +220,32 @@ func csGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	// Convert bool to int for status field
+	var valint int
 	if valid {
-		w.Write([]byte(`{"status": "1"}`))
+		valint = 1
 	} else {
-		w.Write([]byte(`{"status": "0"}`))
+		valint = 0
 	}
-	return
+
+	// Content-Type response handlers
+	if use_cbor {
+		// fmt.Printf("cs: got cert status request in CBOR for serial: %s\n", ser)
+		w.Header().Set("Content-Type", "application/cbor")
+		w.WriteHeader(http.StatusOK)
+		enc := cbor.NewEncoder(w)
+		err = enc.Encode(&protocol.CertStatusResponse{
+			Status: valint,
+		})
+	} else {
+		// fmt.Printf("cs: got cert status request in JSON for serial: %s\n", ser)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		enc := json.NewEncoder(w)
+		err = enc.Encode(&protocol.CertStatusResponse{
+			Status: valint,
+		})
+	}
 }
 
 // Key update request handler
@@ -254,7 +286,7 @@ func dsGet(w http.ResponseWriter, r *http.Request) {
 		// Default to JSON if not Content-Type provided (curl, etc.)
 	default:
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`{"error": "Bad request: Content-Type must be application/cbor or application/json"}`))
+		w.Write([]byte(`{"error": "bad request: Content-Type must be application/cbor or application/json"}`))
 		return
 	}
 
@@ -264,8 +296,8 @@ func dsGet(w http.ResponseWriter, r *http.Request) {
 	if val, ok := pathParams["uuid"]; ok {
 		devid, err = uuid.Parse(val)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(`{"message": "need a valid UUID"}`))
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(`{"error": "need a valid UUID"}`))
 			return
 		}
 	}
@@ -274,7 +306,7 @@ func dsGet(w http.ResponseWriter, r *http.Request) {
 	serials, err := db.CertsByUUID(devid)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`{"error": "Unable to query db for UUID: "}`))
+		w.Write([]byte(`{"error": "unable to query db for UUID"}`))
 		log.Fatal("DB error: %s\n", err)
 		return
 	}
