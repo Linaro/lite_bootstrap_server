@@ -277,8 +277,8 @@ process (`/ap1/v1/cr`), and is a unique timestamp-based 64-bit integer (ex.
 `1635511354607407000`) that is added to the certificate before sending it back
 to the requesting device.
 
-It can be retrieved from a certificate via the serial number field, for
-example:
+It can be retrieved using the `/api/v1/ds/{uuid}` endpoint, or from a
+certificate file directly via the serial number field, for example:
 
 > The example belows assumes a specific device UUID, and `MBP2021.local` as
   the local hostname. These values will vary from one machine to another.
@@ -307,7 +307,7 @@ $ curl -v --cacert certs/SERVER.crt  \
           https://MBP2021.local:1443/api/v1/cs/1648935985023194000
 ```
 
-This endpoint will return one of three JSON response types:
+This endpoint will return one of three response types:
 
 - `{"status": "1"}` + HTTP response code **200**: Indicating that the serial
   number exists, and that the certificate is marked as **valid** in the CA
@@ -329,3 +329,20 @@ key or the current subject public key.
 ## `api/v1/krr` Key Revocation Request: **POST**
 
 Requests the revocation of an existing certificate registration.
+
+## `api/v1/ds/{uuid}` Device Status Request: **GET**
+
+Checks if any valid certificates are associated with the specified UUID. If
+any valid certificates are found, their serial number will be returned in
+the response payload.
+
+This endpoint accepts requests in cbor (`application/cbor`) or json
+(`application/json`), defaulting to JSON responses if no Content-Type is
+provided. The response Content-Type will match the request type used.
+
+```bash
+$ curl -v --cacert certs/SERVER.crt  \
+          --cert certs/BOOTSTRAP.crt \
+          --key certs/BOOTSTRAP.key  \
+          https://MBP2021.local:1443/api/v1/ds/56d38f73-3f6f-4a59-86bc-d315a1ccc634
+```
