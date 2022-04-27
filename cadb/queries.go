@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"math/big"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // NonUnique is an error that indicates a given serial number was not
@@ -116,6 +118,32 @@ func (conn *Conn) SerialValid(serial *big.Int) (bool, error) {
 	return valid, nil
 }
 
+// CertsByUUID returns a list of valid certs associated with a UUID
+func (conn *Conn) CertsByUUID(id uuid.UUID) ([]big.Int, error) {
+	// fmt.Printf("SELECT serial FROM certs WHERE valid = 1 AND id = \"%s\"\n",
+	// 	id.String())
+	rows, err := conn.db.Query(`SELECT serial FROM certs WHERE valid = 1
+		AND id = ?`, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []big.Int
+
+	for rows.Next() {
+		var serial int64
+		err = rows.Scan(&serial)
+		if err != nil {
+			return nil, err
+		}
+		serbi := big.NewInt(int64(serial))
+		result = append(result, *serbi)
+	}
+
+	return result, nil
+}
+
 // UnregisteredDevices returns a list of devices that have not been
 // registered with the cloud.  This may need to be extended to return
 // certificate information, if we add support for a cloud service that
@@ -128,6 +156,7 @@ func (conn *Conn) UnregisteredDevices() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		var id string
