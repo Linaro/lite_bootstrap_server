@@ -185,7 +185,9 @@ endpoint.
 #### Response
 
 Replies with a CBOR array containing `Status` and `Cert` fields, where `Cert`
-contains the BASE64-encoded certificate. 
+contains the BASE64-encoded certificate.  Hubname and Port indicate the hubname
+and port of the Azure MQTT broker service this certificate is for.  This is
+likely to change in the future.
 
 `Status` is an error code where `0` indicates success, and non-zero values
 should be treated as an error.
@@ -196,6 +198,8 @@ The types used in the CBOR response are as follows:
 {
    1 => int,   ; Status.
    2 => bstr,  ; Certificate
+   3 => tstr,  ; Hubname
+   4 => int,   ; Port
 }
 ```
 
@@ -241,6 +245,10 @@ contains the BASE64-encoded certificate.
 
 `Status` is an error code where `0` indicates success, and non-zero values
 should be treated as an error.
+
+The json response will also contain a string "Hubname" and an int "Port" which
+indicate the hubname and port to use with the Azure service.  This is likely to
+change in the future.
 
 ```json
 {
