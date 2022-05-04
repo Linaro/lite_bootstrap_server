@@ -22,9 +22,11 @@ func init() {
 	// Configure the cloud service.
 	serverCmd.PersistentFlags().String("hubname", "hubname", "Azure Hub Name")
 	serverCmd.PersistentFlags().String("resourcegroup", "resourcegroup", "Azure Resource Group")
+	serverCmd.PersistentFlags().String("mqttport", "mqttport", "Azure MQTT Port")
 
 	viper.BindPFlag("server.hubname", serverCmd.PersistentFlags().Lookup("hubname"))
 	viper.BindPFlag("server.resourcegroup", serverCmd.PersistentFlags().Lookup("resourcegroup"))
 	viper.BindPFlag("server.port", serverCmd.PersistentFlags().Lookup("port"))
 	viper.BindPFlag("server.mport", serverCmd.PersistentFlags().Lookup("mport"))
+	viper.BindPFlag("server.mqttport", serverCmd.PersistentFlags().Lookup("mqttport"))
 }

@@ -20,6 +20,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/microbuilder/linaroca/cadb"
 	"github.com/microbuilder/linaroca/protocol"
+	"github.com/spf13/viper"
 )
 
 // The database itself.
@@ -75,21 +76,28 @@ func crPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	hubname := viper.GetString("server.hubname")
+	port := viper.GetInt("server.mqttport")
+
 	if use_cbor {
 		w.Header().Set("Content-Type", "application/cbor")
 		w.WriteHeader(http.StatusOK)
 		enc := cbor.NewEncoder(w)
 		err = enc.Encode(&protocol.CSRResponse{
-			Status: 0,
-			Cert:   cert,
+			Status:  0,
+			Cert:    cert,
+			Hubname: hubname,
+			Port:    port,
 		})
 	} else {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		enc := json.NewEncoder(w)
 		err = enc.Encode(&protocol.CSRResponse{
-			Status: 0,
-			Cert:   cert,
+			Status:  0,
+			Cert:    cert,
+			Hubname: hubname,
+			Port:    port,
 		})
 	}
 }
