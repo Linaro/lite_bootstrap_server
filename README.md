@@ -1,49 +1,61 @@
-# Linaro Certificate Authority
+# LITE Bootstrap Server
 
-A basic, proof-of-concept certificate authority (CA) and utility written in Go.
+A proof-of-concept certificate authority (CA) and bootstrap server written
+in Go.
 
-This utility can be used to validate and sign certificate signing requests
-(CSRs), list previously registered devices, and enables a basic HTTP server
-and REST API that can be used to communicate with the CA and it's underlying
-device registry.
+This utility provides an authenticated REST API that can be used to:
 
-Certificate requests are logged to a local SQLite database (`CADB.db`), which
-can be used to extend the utility for blocklist/allowlist type features,
-and certificate status checks based on the registered device's unique ID.
+- Validate and sign certificate signing requests (CSRs)
+- Register devices on a 3rd party cloud service during certificate registration
+- Provision devices with basic connection details (MQTT broker domain/port)
+- List previously registered devices
+- Check certificate validity
+
+Certificate requests are logged to a local SQLite database (`CADB.db`).
+
+Remote registration of certificate UUIDs and returned MQTT broker details on
+certificate registration are currently based on Azure IoT Hub, which may be
+extended to other providers in the future.
+
+It also enables a basic HTTPS server that requests a client certificate during
+the TLS handshake, verifying that the certificate has been signed by the CA.
 
 ## Quick Setup
 
-### Setup Script
+### Setup Scripts
 
 Four bash scripts are provided:
 
-- `setup-ca.sh`
-- `setup-bootstrap.sh`
-- `run-server.sh`
-- `new-device.sh`
+#### `setup-ca.sh`
 
-The first script creates the HTTP and CA keys and certificates.  This
+This script creates the HTTP and CA keys and certificates.  This
 should only need to be run once, and, in fact, will require existing
 certs to have to be removed manually before it can be run again.
 
-The second script creates the key pair used for device bootstrap.
+#### `setup-bootstrap.sh`
+
+This script creates the key pair used for device bootstrap.
 This is needed to authenticate with the CA server, and the data placed
 in `bootstrap_crt.txt` and `bootstrap_key.txt` will need to be
 included in the device, or included in any attempts to connect to the REST
 API using curl or wget.
 
-This script can be run multiple times (after removing the generated
+The script can be run multiple times (after removing the generated
 files), but only would need to be rerun after regenerating the CA
 cert.
 
-The third script will start the CA server on port 1443.
+#### `run-server.sh`
 
-The last script creates a new device, and registers it with this CA.
+This script will start the CA server on port 1443.
+
+#### `new-device.sh`
+
+This script creates a new device, and registers it with this CA.
 The certificates for the device will be placed in the 'certs'
 directory, along with the certificates above.
 
-For details, or to perform these steps manually, please refer directly
-to these scripts.
+> This certificate is only useful for testing the CA, and generally won't
+be used in a production setting.
 
 ### Setting the Hostname
 
@@ -60,82 +72,11 @@ following order of precedence:
 
 Override the system hostname via `$ export CAHOSTNAME='myhostname.local'`.
 
-## Testing mutual TLS Authentication
+### Config Settings
 
-A secondary TCP server is started up along with the main CA server to test
-mutual TLS authentication using client certificates.
-
-mutual TLS authentication requests a certificate from the connecting client
-device that has been signed with the CA, adding an additional level of trust
-on behalf of the server concerning the client device.
-
-### Using a CA-signed client certificate
-
-Once a user certificate has been generated (via `new-device.sh`), you can test
-mTLS connections via:
-
-> The example belows assumes a specific device UUID, and `MBP2021.local` as
-  the local hostname. These values will vary from one machine to another.
-
-```bash
-$ openssl s_client \
-  -cert certs/a8c6f808-b659-4f88-affb-40498834c572.crt \
-  -key certs/a8c6f808-b659-4f88-affb-40498834c572.key \
-  -CAfile certs/SERVER.crt \
-  -connect MBP2021.local:8443
-```
-
-- The `cert` and `key` fields indicates the client certificate and key
-- The `CAfile` field is the server certificate, signed by the CA
-
-The CA key is not added in this situation since the TCP server has a
-copy of it that it uses to validate the client certificate's signature
-against.
-
-If the connection is successful, you should get the following response
-at the end of the outptut:
-
-```
-Verify return code: 0 (ok)
-```
-
-And linaroca will display details about the client cert in the log output:
-
-```bash
-$ ./linaroca server start
-Starting mTLS TCP server on MBP2021.local:8443
-Starting CA server on port https://MBP2021.local:1443
-Connection accepted from 127.0.0.1:50231
-Client certificate:
-- Issuer CN: LRC - 20220330062226
-- Subject: CN=a8c6f808-b659-4f88-affb-40498834c572,
-  OU=LinaroCA Device Cert - Signing,O=MBP2021.local
-```
-
-### Using an invalid client certificate
-
-To test with an **invalid user certificate**, generate a new cert:
-
-```bash
-$ openssl ecparam -name prime256v1 -genkey -out USERBAD.key
-$ openssl req -new -x509 -sha256 -days 365 -key USERBAD.key -out USERBAD.crt -subj "/O=Linaro, LTD/CN=MBP2021.local"
-```
-
-Then try the request again:
-
-```bash
-$ openssl s_client \
-  -cert USERBAD.crt -key USERBAD.key \
-  -CAfile certs/SERVER.crt\
-  -connect MBP2021.local:8443
-```
-
-You should get the following error from linaroca:
-
-```
-Connection accepted from 127.0.0.1:50443
-Client handshake error: tls: failed to verify client certificate: x509: certificate signed by unknown authority
-```
+You can override various config settings with a `.linaroca.toml` file in the
+application root folder. The `[server]` settings map to the command-line
+parameters show with `linaroca server --help`, etc.
 
 # REST API Endpoints
 
@@ -386,3 +327,87 @@ key or the current subject public key.
 ## `api/v1/krr` Key Revocation Request: **POST**
 
 Requests the revocation of an existing certificate registration.
+
+
+# Mutual TLS Authentication Test Server
+
+A secondary TCP server is started up along with the main CA server to test
+mutual TLS authentication using client certificates.
+
+mutual TLS authentication requests a certificate from the connecting client
+device that has been signed with the CA, adding an additional level of trust
+on behalf of the server concerning the client device.
+
+### Using a CA-signed client certificate
+
+Once a user certificate has been generated (via `new-device.sh`), you can test
+mTLS connections via:
+
+> The example belows assumes a specific device UUID, and `MBP2021.local` as
+  the local hostname. These values will vary from one machine to another.
+
+```bash
+$ openssl s_client \
+  -cert certs/a8c6f808-b659-4f88-affb-40498834c572.crt \
+  -key certs/a8c6f808-b659-4f88-affb-40498834c572.key \
+  -CAfile certs/SERVER.crt \
+  -connect MBP2021.local:8443
+```
+
+- The `cert` and `key` fields indicates the client certificate and key
+- The `CAfile` field is the server certificate, signed by the CA
+
+The CA key is not added in this situation since the TCP server has a
+copy of it that it uses to validate the client certificate's signature
+against.
+
+If the connection is successful, you should get the following response
+at the end of the outptut:
+
+```
+Verify return code: 0 (ok)
+```
+
+And linaroca will display details about the client cert in the log output:
+
+```bash
+$ ./linaroca server start
+Starting mTLS TCP server on MBP2021.local:8443
+Starting CA server on port https://MBP2021.local:1443
+Connection accepted from 127.0.0.1:50231
+Client certificate:
+- Issuer CN: LRC - 20220330062226
+- Subject: CN=a8c6f808-b659-4f88-affb-40498834c572,
+  OU=LinaroCA Device Cert - Signing,O=MBP2021.local
+```
+
+### Using an invalid client certificate
+
+To test with an **invalid user certificate**, generate a new cert:
+
+```bash
+$ openssl ecparam -name prime256v1 -genkey -out USERBAD.key
+$ openssl req -new -x509 -sha256 -days 365 -key USERBAD.key -out USERBAD.crt -subj "/O=Linaro, LTD/CN=MBP2021.local"
+```
+
+Then try the request again:
+
+```bash
+$ openssl s_client \
+  -cert USERBAD.crt -key USERBAD.key \
+  -CAfile certs/SERVER.crt\
+  -connect MBP2021.local:8443
+```
+
+You should get the following error from linaroca:
+
+```
+Connection accepted from 127.0.0.1:50443
+Client handshake error: tls: failed to verify client certificate: x509: certificate signed by unknown authority
+```
+
+# Troubleshooting
+
+## FAQs
+
+ToDo
