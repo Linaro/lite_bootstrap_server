@@ -76,28 +76,21 @@ func crPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hubname := viper.GetString("server.hubname")
-	port := viper.GetInt("server.mqttport")
-
 	if use_cbor {
 		w.Header().Set("Content-Type", "application/cbor")
 		w.WriteHeader(http.StatusOK)
 		enc := cbor.NewEncoder(w)
 		err = enc.Encode(&protocol.CSRResponse{
-			Status:  0,
-			Cert:    cert,
-			Hubname: hubname,
-			Port:    port,
+			Status: 0,
+			Cert:   cert,
 		})
 	} else {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		enc := json.NewEncoder(w)
 		err = enc.Encode(&protocol.CSRResponse{
-			Status:  0,
-			Cert:    cert,
-			Hubname: hubname,
-			Port:    port,
+			Status: 0,
+			Cert:   cert,
 		})
 	}
 }
@@ -256,30 +249,6 @@ func csGet(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Key update request handler
-func kurPost(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"message": "kur POST called"}`))
-
-	// TODO: Validate current cert status and update/regen if necessary
-	// This should generate a new certificate for this client,
-	// based on the information from the existing certificate.
-	// This should _not_ invalidate or revoke the old certificate,
-	// as something such as an untimely power loss would cause the
-	// new key to be lost.  The old certificate is fine to use
-	// until it expires.
-}
-
-// Key revocation request
-func krrPost(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"message": "krr POST called"}`))
-
-	// TODO: Mark certificate as revoked in the DB
-}
-
 // Test endpoint: https://localhost/api/v1/ds/{uuid}
 func dsGet(w http.ResponseWriter, r *http.Request) {
 	pathParams := mux.Vars(r)
@@ -357,6 +326,73 @@ func dsGet(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Key update request handler
+func kurPost(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"message": "kur POST called"}`))
+
+	// TODO: Validate current cert status and update/regen if necessary
+	// This should generate a new certificate for this client,
+	// based on the information from the existing certificate.
+	// This should _not_ invalidate or revoke the old certificate,
+	// as something such as an untimely power loss would cause the
+	// new key to be lost.  The old certificate is fine to use
+	// until it expires.
+}
+
+// Key revocation request
+func krrPost(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"message": "krr POST called"}`))
+
+	// TODO: Mark certificate as revoked in the DB
+}
+
+// Test endpoint: https://localhost/api/v1/ccs
+func ccsGet(w http.ResponseWriter, r *http.Request) {
+	// Check Content-Type request
+	use_cbor := false
+	switch r.Header.Get("Content-Type") {
+	case "application/cbor":
+		use_cbor = true
+	case "application/json":
+	case "":
+		// Default to JSON if not Content-Type provided (curl, etc.)
+	default:
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{"error": "bad request: Content-Type must be application/cbor or application/json"}`))
+		return
+	}
+
+	hubname := viper.GetString("server.hubname")
+	port := viper.GetInt("server.mqttport")
+
+	// CBOR response handler
+	if use_cbor {
+		// fmt.Printf("Got dev status request in CBOR for UUID: %s\n", devid)
+		w.Header().Set("Content-Type", "application/cbor")
+		w.WriteHeader(http.StatusOK)
+		enc := cbor.NewEncoder(w)
+
+		enc.Encode(&protocol.CCSResponse{
+			Hubname: hubname,
+			Port:    port,
+		})
+		return
+	}
+
+	// Default JSON response handler
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	enc := json.NewEncoder(w)
+	enc.Encode(&protocol.CCSResponse{
+		Hubname: hubname,
+		Port:    port,
+	})
+}
+
 // REST API catch all handler
 func notFound(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -395,9 +431,10 @@ func Start(port int16) {
 	api.HandleFunc("/cr", crPost).Methods(http.MethodPost)
 	api.HandleFunc("/p10cr", p10crPost).Methods(http.MethodPost)
 	api.HandleFunc("/cs/{serial}", csGet).Methods(http.MethodGet)
+	api.HandleFunc("/ds/{uuid}", dsGet).Methods(http.MethodGet)
 	api.HandleFunc("/kur", kurPost).Methods(http.MethodPost)
 	api.HandleFunc("/krr", krrPost).Methods(http.MethodPost)
-	api.HandleFunc("/ds/{uuid}", dsGet).Methods(http.MethodGet)
+	api.HandleFunc("/ccs", ccsGet).Methods(http.MethodGet)
 	api.HandleFunc("", notFound)
 
 	// Handle standard requests. Routes are tested in the order they are added,

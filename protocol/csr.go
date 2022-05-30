@@ -6,8 +6,6 @@ type CSRRequest struct {
 }
 
 type CSRResponse struct {
-	Status  int    `cbor:"1,keyasint"`
-	Cert    []byte `cbor:"2,keyasint"`
-	Hubname string `cbor:"3,keyasint"`
-	Port    int    `cbor:"4,keyasint"`
+	Status int    `cbor:"1,keyasint"`
+	Cert   []byte `cbor:"2,keyasint"`
 }
