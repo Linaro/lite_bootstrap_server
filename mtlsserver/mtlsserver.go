@@ -29,12 +29,22 @@ func handleConnection(c net.Conn) {
 	}
 
 	// Get client certificate using TLS ConnectionState
+	// The first record should be the client/device certificate
+	// The final record should be the CA certificate
 	state := tlsConn.ConnectionState()
-	for _, v := range state.PeerCertificates {
-		fmt.Printf("Client certificate:\n")
-		fmt.Printf("- Issuer CN: %s\n", v.Issuer.CommonName)
-		fmt.Printf("- Subject: %s\n", v.Subject)
+	for i, v := range state.PeerCertificates {
+		fmt.Printf("[Certificate %d]\n", i)
+		fmt.Printf("  - Subject: %s\n", v.Subject)
+		fmt.Printf("  - Serial:  %s\n", v.SerialNumber)
 	}
+
+	// Alternatively, only log the client cert:
+	// client := state.PeerCertificates[0]
+	// fmt.Printf("Client Certificate:\n")
+	// fmt.Printf("  - Subject: %s\n", client.Subject)
+	// fmt.Printf("  - Serial:  %s\n", client.SerialNumber)
+
+	// TODO: Do something with the connection
 
 	// Close connection
 	c.Close()
