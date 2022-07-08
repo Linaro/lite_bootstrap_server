@@ -178,16 +178,12 @@ Replies with a CBOR array containing the following fields:
 {
    1 => int,   ; Status.
    2 => bstr,  ; Certificate
-   3 => tstr,  ; Hubname
-   4 => int,   ; Port
 }
 ```
 
 - `Status` is an error code where `0` indicates success, and non-zero values
-should be treated as an error.
+  should be treated as an error.
 - `Certificate` contains the BASE64-encoded certificate.
-- `Hubname` contains the Azure IoT Hub hubname string.
-- `Port` contains the Azure IoT Hub MQTT port number.
 
 This response definition is likely to change in the future.
 
@@ -219,26 +215,61 @@ endpoint.
 
 #### Response
 
-Replies with a JSON array containing `Status`, `Cert`, `Hubname` and `Port`
+Replies with a JSON object containing `Status`, `Cert`, `Hubname` and `Port`
 fields:
 
 - `Status` is an error code where `0` indicates success, and non-zero values
-should be treated as an error.
+  should be treated as an error.
 - `Cert` contains the BASE64-encoded certificate.
-- `Hubname` contains the Azure IoT Hub hubname string.
-- `Port` contains the Azure IoT Hub MQTT port number.
 
 This response definition is likely to change in the future.
 
 ```json
 {
   "Status":0,
-  "Cert":"MIIBtjCCAVugAwIBAgIIFrKA6WV+D5gwCgYIKoZIzj0EAwIwOjEUMBIGA1UEChMLTGluYXJvLCBMVEQxIjAgBgNVBAMTGUxpbmFyb0NBIFJvb3QgQ2VydCAtIDIwMjAwHhcNMjExMDI5MTI0MjM0WhcNMjIxMDI5MTI0MjM0WjBDMRIwEAYDVQQKEwlsb2NhbGhvc3QxLTArBgNVBAMTJGU4YzQ3YjQyLWY3ZmMtNGRjOC1iNTM4LTkzNDk2YjYxOWEzYzBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABCeWixiySA/DFRwhxM0DpTut0bwWk8vJUW7ZAzg2D4AygTrgB1l28rYIzt9ivDtvNgSvx5eXhCqnF3B3q5cRNsSjQjBAMB0GA1UdDgQWBBSCv0wCNUXMXavfi15AbcCclDvfkzAfBgNVHSMEGDAWgBSxhUrvHyyKgHn5/FaoKd761df1tjAKBggqhkjOPQQDAgNJADBGAiEAjDVYvr1qBfvc0VFZcFLxwO/5XvnBh2jZFpL9ykKsCw8CIQDF3ne7yokRAHt0nn35CW/J3FclGYH9rBVCZr7FU+pzHg==",
+  "Cert":"MIIBtjCCAVugAwIBAgIIFrKA6WV+D5gwCgYIKoZIzj0EAwIwOjEUMBIGA1UEChMLTGluYXJvLCBMVEQxIjAgBgNVBAMTGUxpbmFyb0NBIFJvb3QgQ2VydCAtIDIwMjAwHhcNMjExMDI5MTI0MjM0WhcNMjIxMDI5MTI0MjM0WjBDMRIwEAYDVQQKEwlsb2NhbGhvc3QxLTArBgNVBAMTJGU4YzQ3YjQyLWY3ZmMtNGRjOC1iNTM4LTkzNDk2YjYxOWEzYzBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABCeWixiySA/DFRwhxM0DpTut0bwWk8vJUW7ZAzg2D4AygTrgB1l28rYIzt9ivDtvNgSvx5eXhCqnF3B3q5cRNsSjQjBAMB0GA1UdDgQWBBSCv0wCNUXMXavfi15AbcCclDvfkzAfBgNVHSMEGDAWgBSxhUrvHyyKgHn5/FaoKd761df1tjAKBggqhkjOPQQDAgNJADBGAiEAjDVYvr1qBfvc0VFZcFLxwO/5XvnBh2jZFpL9ykKsCw8CIQDF3ne7yokRAHt0nn35CW/J3FclGYH9rBVCZr7FU+pzHg=="
+}
+```
+
+## `/api/v1/service` Service information: **GET**
+
+This API requires the Content-Type to be set, and will return either
+json or cbor data accordingly.
+
+### Response with `application/cbor`
+
+Replies with a CBOR array containing the following fields:
+
+```cddl
+{
+   1 => int,   ; Status
+   2 => tstr,  ; Hubname
+   3 => int,   ; Port
+}
+```
+
+- `Status` is an error code where `0` indicates success, and non-zero
+  values should be treated as an error.
+- `Hubname` contains the Azure IoT Hub hubname string
+- `Port` contains the Zaure IoT Hub MQTT port number
+
+### Response with `application/json`
+
+Replies with a JSON object containing `Status`, `Hubname` and `Port`
+fields:
+
+- `Status` is an error code where `0` indicates success, and non-zero values
+  should be treated as an error.
+- `Hubname` contains the Azure IoT Hub hubname string.
+- `Port` contains the Azure IoT Hub MQTT port number.
+
+```json
+{
+  "Status":0,
   "Hubname":"azurehubname",
   "Port":8883
 }
 ```
-
 ## `/api/v1/p10cr` Certification Request from PKCS10: **POST**
 
 This endpoint is used to request a certificate for a new device, posting a
