@@ -6,8 +6,13 @@ type CSRRequest struct {
 }
 
 type CSRResponse struct {
+	Status int    `cbor:"1,keyasint"`
+	Cert   []byte `cbor:"2,keyasint"`
+}
+
+// The ServiceResponse returns information about the intended service
+type ServiceResponse struct {
 	Status  int    `cbor:"1,keyasint"`
-	Cert    []byte `cbor:"2,keyasint"`
-	Hubname string `cbor:"3,keyasint"`
-	Port    int    `cbor:"4,keyasint"`
+	Hubname string `cbor:"2,keyasint"`
+	Port    int    `cbor:"3,keyasint"`
 }

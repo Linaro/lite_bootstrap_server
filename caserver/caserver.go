@@ -76,16 +76,50 @@ func crPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hubname := viper.GetString("server.hubname")
-	port := viper.GetInt("server.mqttport")
-
 	if use_cbor {
 		w.Header().Set("Content-Type", "application/cbor")
 		w.WriteHeader(http.StatusOK)
 		enc := cbor.NewEncoder(w)
 		err = enc.Encode(&protocol.CSRResponse{
+			Status: 0,
+			Cert:   cert,
+		})
+	} else {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		enc := json.NewEncoder(w)
+		err = enc.Encode(&protocol.CSRResponse{
+			Status: 0,
+			Cert:   cert,
+		})
+	}
+}
+
+// serviceGet returns information about the MQTT service the device
+// should connect to.
+func serviceGet(w http.ResponseWriter, r *http.Request) {
+	use_cbor := false
+	switch r.Header.Get("Content-Type") {
+	case "application/cbor":
+		use_cbor = true
+	case "application/json":
+		//
+	default:
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{"error": "Bad request: Content-Type must be application/cbor or application/json"}`))
+		return
+	}
+
+	hubname := viper.GetString("server.hubname")
+	port := viper.GetInt("server.mqttport")
+
+	var err error
+	if use_cbor {
+		w.Header().Set("Content-Type", "application/cbor")
+		w.WriteHeader(http.StatusOK)
+		enc := cbor.NewEncoder(w)
+		err = enc.Encode(&protocol.ServiceResponse{
 			Status:  0,
-			Cert:    cert,
 			Hubname: hubname,
 			Port:    port,
 		})
@@ -93,13 +127,15 @@ func crPost(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		enc := json.NewEncoder(w)
-		err = enc.Encode(&protocol.CSRResponse{
+		err = enc.Encode(&protocol.ServiceResponse{
 			Status:  0,
-			Cert:    cert,
 			Hubname: hubname,
 			Port:    port,
 		})
 	}
+
+	// TODO: Handle the error?
+	_ = err
 }
 
 // Maximum file size for uploaded CSRs = 4 KB
@@ -393,6 +429,7 @@ func Start(port int16) {
 	// Setup the REST API subrouter
 	api := r.PathPrefix("/api/v1").Subrouter()
 	api.HandleFunc("/cr", crPost).Methods(http.MethodPost)
+	api.HandleFunc("/service", serviceGet).Methods(http.MethodGet)
 	api.HandleFunc("/p10cr", p10crPost).Methods(http.MethodPost)
 	api.HandleFunc("/cs/{serial}", csGet).Methods(http.MethodGet)
 	api.HandleFunc("/kur", kurPost).Methods(http.MethodPost)
