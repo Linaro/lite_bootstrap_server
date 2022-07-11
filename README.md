@@ -178,18 +178,12 @@ Replies with a CBOR array containing the following fields:
 {
    1 => int,   ; Status.
    2 => bstr,  ; Certificate
-   3 => tstr,  ; Hubname
-   4 => int,   ; Port
 }
 ```
 
 - `Status` is an error code where `0` indicates success, and non-zero values
 should be treated as an error.
 - `Certificate` contains the BASE64-encoded certificate.
-- `Hubname` contains the Azure IoT Hub hubname string.
-- `Port` contains the Azure IoT Hub MQTT port number.
-
-This response definition is likely to change in the future.
 
 ### Request with `application/json`
 
@@ -219,23 +213,16 @@ endpoint.
 
 #### Response
 
-Replies with a JSON array containing `Status`, `Cert`, `Hubname` and `Port`
-fields:
+Replies with a JSON array containing `Status`, and `Cert` fields:
 
 - `Status` is an error code where `0` indicates success, and non-zero values
 should be treated as an error.
 - `Cert` contains the BASE64-encoded certificate.
-- `Hubname` contains the Azure IoT Hub hubname string.
-- `Port` contains the Azure IoT Hub MQTT port number.
-
-This response definition is likely to change in the future.
 
 ```json
 {
   "Status":0,
   "Cert":"MIIBtjCCAVugAwIBAgIIFrKA6WV+D5gwCgYIKoZIzj0EAwIwOjEUMBIGA1UEChMLTGluYXJvLCBMVEQxIjAgBgNVBAMTGUxpbmFyb0NBIFJvb3QgQ2VydCAtIDIwMjAwHhcNMjExMDI5MTI0MjM0WhcNMjIxMDI5MTI0MjM0WjBDMRIwEAYDVQQKEwlsb2NhbGhvc3QxLTArBgNVBAMTJGU4YzQ3YjQyLWY3ZmMtNGRjOC1iNTM4LTkzNDk2YjYxOWEzYzBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABCeWixiySA/DFRwhxM0DpTut0bwWk8vJUW7ZAzg2D4AygTrgB1l28rYIzt9ivDtvNgSvx5eXhCqnF3B3q5cRNsSjQjBAMB0GA1UdDgQWBBSCv0wCNUXMXavfi15AbcCclDvfkzAfBgNVHSMEGDAWgBSxhUrvHyyKgHn5/FaoKd761df1tjAKBggqhkjOPQQDAgNJADBGAiEAjDVYvr1qBfvc0VFZcFLxwO/5XvnBh2jZFpL9ykKsCw8CIQDF3ne7yokRAHt0nn35CW/J3FclGYH9rBVCZr7FU+pzHg==",
-  "Hubname":"azurehubname",
-  "Port":8883
 }
 ```
 
@@ -368,6 +355,63 @@ key or the current subject public key.
 ## `api/v1/krr` Key Revocation Request: **POST**
 
 Requests the revocation of an existing certificate registration.
+
+## `api/v1/ccs` Clous Connectvity Settings: **GET**
+
+Requests the cloud connectivity details for the MQTT broker associated with
+your cloud infrastructure.
+
+### Request with `application/cbor`
+
+You can send a status request via:
+
+```bash
+$ curl -v --cacert certs/SERVER.crt  \
+          --cert certs/BOOTSTRAP.crt \
+          --key certs/BOOTSTRAP.key  \
+          -H 'Content-Type: application/cbor' \
+          -H 'Accept: application/cbor' \
+          https://MBP2021.local:1443/api/v1/ccs
+```
+
+#### Response
+
+Replies with a CBOR array containing the following fields:
+
+```cddl
+{
+   1 => tstr,  ; Hubname
+   2 => int,   ; Port
+}
+```
+
+- `Hubname` contains the Azure IoT Hub hubname string.
+- `Port` contains the Azure IoT Hub MQTT port number.
+
+### Request with `application/json` (default)
+
+You can send a status request via:
+
+```bash
+$ curl -v --cacert certs/SERVER.crt  \
+          --cert certs/BOOTSTRAP.crt \
+          --key certs/BOOTSTRAP.key  \
+          https://MBP2021.local:1443/api/v1/ccs
+```
+
+#### Response
+
+Replies with a JSON array containing the following fields:
+
+```json
+{
+  "Hubname":"azure_hubname",
+  "Port":8883
+}
+```
+
+- `Hubname` contains the Azure IoT Hub hubname string.
+- `Port` contains the Azure IoT Hub MQTT port number.
 
 # Mutual TLS Test Server
 
