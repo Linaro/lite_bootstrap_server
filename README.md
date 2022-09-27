@@ -245,7 +245,7 @@ Testing this endpoint with:
   value will vary from one machine to another.
 
 ```bash
-$ curl -v --cacert certs/SERVER.crt  \
+$ curl -v --cacert certs/CA.crt  \
           --cert certs/BOOTSTRAP.crt \
           --key certs/BOOTSTRAP.key  \
           -F csrfile=@USER.csr       \
@@ -292,7 +292,7 @@ Certificate:
 Once you have the serial number, you can send a status request via:
 
 ```bash
-$ curl -v --cacert certs/SERVER.crt  \
+$ curl -v --cacert certs/CA.crt  \
           --cert certs/BOOTSTRAP.crt \
           --key certs/BOOTSTRAP.key  \
           https://MBP2021.local:1443/api/v1/cs/1648935985023194000
@@ -328,7 +328,7 @@ This endpoint accepts requests in cbor (`application/cbor`) or json
 provided. The response Content-Type will match the request type used.
 
 ```bash
-$ curl -v --cacert certs/SERVER.crt  \
+$ curl -v --cacert certs/CA.crt  \
           --cert certs/BOOTSTRAP.crt \
           --key certs/BOOTSTRAP.key  \
           https://MBP2021.local:1443/api/v1/ds/56d38f73-3f6f-4a59-86bc-d315a1ccc634
@@ -366,7 +366,7 @@ your cloud infrastructure.
 You can send a status request via:
 
 ```bash
-$ curl -v --cacert certs/SERVER.crt  \
+$ curl -v --cacert certs/CA.crt  \
           --cert certs/BOOTSTRAP.crt \
           --key certs/BOOTSTRAP.key  \
           -H 'Content-Type: application/cbor' \
@@ -393,7 +393,7 @@ Replies with a CBOR array containing the following fields:
 You can send a status request via:
 
 ```bash
-$ curl -v --cacert certs/SERVER.crt  \
+$ curl -v --cacert certs/CA.crt  \
           --cert certs/BOOTSTRAP.crt \
           --key certs/BOOTSTRAP.key  \
           https://MBP2021.local:1443/api/v1/ccs
