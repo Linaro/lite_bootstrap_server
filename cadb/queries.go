@@ -104,6 +104,20 @@ func (conn *Conn) AddCert(id string, name string, serial *big.Int, keyId []byte,
 	return err
 }
 
+// GetCertBySerial gets certificate for the given serial.
+func (conn *Conn) GetCertBySerial(serial *big.Int) ([]byte, error) {
+	var cert []byte
+
+	if err := conn.db.QueryRow("SELECT cert FROM certs WHERE valid = 1 AND serial = ?",
+		serial.String()).Scan(&cert); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("serial %d: unknown certificate", serial)
+		}
+		return nil, fmt.Errorf("serial %d: %s", serial, err)
+	}
+	return cert, nil
+}
+
 // SerialValid checks if a valid certificate exists for the specified serial
 func (conn *Conn) SerialValid(serial *big.Int) (bool, error) {
 	var valid bool
