@@ -291,6 +291,10 @@ Certificate:
 
 Once you have the serial number, you can send a status request via:
 
+### Request with `application/json` (default)
+
+You can send a status request via:
+
 ```bash
 $ curl -v --cacert certs/CA.crt  \
           --cert certs/BOOTSTRAP.crt \
@@ -298,9 +302,23 @@ $ curl -v --cacert certs/CA.crt  \
           https://MBP2021.local:1443/api/v1/cs/1648935985023194000
 ```
 
-This endpoint accepts requests in cbor (`application/cbor`) or json
-(`application/json`), defaulting to JSON responses if no Content-Type is
-provided. The response Content-Type will match the request type used.
+### Request with `application/cbor`
+
+You can send a status request via:
+
+```bash
+$ curl -v --cacert certs/CA.crt  \
+          --cert certs/BOOTSTRAP.crt \
+          --key certs/BOOTSTRAP.key  \
+          -H 'Content-Type: application/cbor' \
+          https://MBP2021.local:1443/api/v1/cs/1648935985023194000 \
+          -o cbor_enc.raw
+```
+
+> CBOR requests receive binary responses, which curl will print as an unknown 
+  symbol on the console. Pass the `-o <filename>` argument to store the binary 
+  output in a file, and execute `go run cbor_decoder.go -i <filename> -r cs`
+  to decode  the binary output response and print in the JSON format.
 
 ### Responses
 
@@ -327,12 +345,32 @@ This endpoint accepts requests in cbor (`application/cbor`) or json
 (`application/json`), defaulting to JSON responses if no Content-Type is
 provided. The response Content-Type will match the request type used.
 
+### Request with `application/json`
+
 ```bash
 $ curl -v --cacert certs/CA.crt  \
           --cert certs/BOOTSTRAP.crt \
           --key certs/BOOTSTRAP.key  \
           https://MBP2021.local:1443/api/v1/ds/56d38f73-3f6f-4a59-86bc-d315a1ccc634
 ```
+
+### Request with `application/cbor`
+
+You can send a status request via:
+
+```bash
+$ curl -v --cacert certs/CA.crt  \
+          --cert certs/BOOTSTRAP.crt \
+          --key certs/BOOTSTRAP.key  \
+          -H 'Content-Type: application/cbor' \
+          https://MBP2021.local:1443/api/v1/ds/56d38f73-3f6f-4a59-86bc-d315a1ccc634 \
+          -o cbor_enc.raw
+```
+
+> CBOR requests receive binary responses, which curl will print as an unknown 
+  symbol on the console. Pass the `-o <filename>` argument to store the binary 
+  output in a file, and execute `go run cbor_decoder.go -i <filename> -r ds`
+  to decode  the binary output response and print in the JSON format.
 
 ### Responses
 
@@ -356,7 +394,7 @@ key or the current subject public key.
 
 Requests the revocation of an existing certificate registration.
 
-## `api/v1/ccs` Clous Connectvity Settings: **GET**
+## `api/v1/ccs` Cloud Connectvity Settings: **GET**
 
 Requests the cloud connectivity details for the MQTT broker associated with
 your cloud infrastructure.
@@ -371,22 +409,14 @@ $ curl -v --cacert certs/CA.crt  \
           --key certs/BOOTSTRAP.key  \
           -H 'Content-Type: application/cbor' \
           -H 'Accept: application/cbor' \
-          https://MBP2021.local:1443/api/v1/ccs
+          https://MBP2021.local:1443/api/v1/ccs \
+          -o cbor_enc.raw
 ```
 
-#### Response
-
-Replies with a CBOR array containing the following fields:
-
-```cddl
-{
-   1 => tstr,  ; Hubname
-   2 => int,   ; Port
-}
-```
-
-- `Hubname` contains the Azure IoT Hub hubname string.
-- `Port` contains the Azure IoT Hub MQTT port number.
+> CBOR requests receive binary responses, which curl will print as an unknown 
+  symbol on the console. Pass the `-o <filename>` argument to store the binary 
+  output in a file, and execute `go run cbor_decoder.go -i <filename> -r ccs`
+  to decode  the binary output response and print in the JSON format.
 
 ### Request with `application/json` (default)
 
@@ -399,7 +429,7 @@ $ curl -v --cacert certs/CA.crt  \
           https://MBP2021.local:1443/api/v1/ccs
 ```
 
-#### Response
+### Response
 
 Replies with a JSON array containing the following fields:
 
@@ -412,6 +442,58 @@ Replies with a JSON array containing the following fields:
 
 - `Hubname` contains the Azure IoT Hub hubname string.
 - `Port` contains the Azure IoT Hub MQTT port number.
+
+## `api/v1/cc/{serial}` X509 Certificate Copy Request: **GET**
+
+Requests a copy of the x509 certificate associated with the supplied serial number.
+If found, the certificate data is returned in PEM format (BASE64 ASCII).
+
+If you need information about the serial number refer 
+[here](#apiv1csserial-certificate-status-request-get)
+
+### Request by default `application/json`
+
+You can send the x509 certificate copy request via:
+
+```bash
+$ curl -v --cacert certs/CA.crt  \
+          --cert certs/BOOTSTRAP.crt \
+          --key certs/BOOTSTRAP.key  \
+          https://MBP2021.local:1443/api/v1/cc/1664276589086394391
+```
+
+### Request with the `application/cbor`
+
+You can send the x509 certificate copy request via:
+
+```bash
+$ curl -v --cacert certs/CA.crt  \          
+          --cert certs/BOOTSTRAP.crt \
+          --key certs/BOOTSTRAP.key  \
+          -H 'Content-Type: application/cbor' \
+          https://MBP2021.local:1443/api/v1/cc/1664276589086394391 \
+          -o cbor_enc.raw
+```
+
+> CBOR requests receive binary responses, which curl will print as an unknown 
+  symbol on the console. Pass the `-o <filename>` argument to store the binary 
+  output in a file, and execute `go run cbor_decoder.go -i <filename> -r cc`
+  to decode  the binary output response and print in the JSON format.
+
+### Response
+
+Replies with a JSON or CBOR array containing `Status`, and `Cert` fields:
+
+- `Status` is an error code where `0` indicates success, and non-zero values
+should be treated as an error.
+- `Cert` contains the string type x509 pem format certificate.
+
+```json
+{
+  "Status":0,
+  "Cert":"-----BEGIN CERTIFICATE-----\nMIIB6TCCAY+gAwIBAgIIFxiyvXR+SBcwCgYIKoZIzj0EAwIwNTEUMBIGA1UEChML\nTGluYXJvLCBMVEQxHTAbBgNVBAMTFExSQyAtIDIwMjIwOTI3MTEwMjE3MB4XDTIy\nMDkyNzExMDMwOVoXDTIzMDkyNzExMDMwOVowfDEiMCAGA1UEChMZYXJtLXZpcnR1\nYWwtbWFjaGluZS5sb2NhbDEnMCUGA1UECxMeTGluYXJvQ0EgRGV2aWNlIENlcnQg\nLSBTaWduaW5nMS0wKwYDVQQDEyRjNTJmN2Y4NS04ZmYwLTQzOGQtOGEwNi05Mzlj\nOWJlNTlhNGYwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAARrMDR1HgkP/ET4yNqG\nM5km89r2DFAAKZDyL2lVg3C8sjNVrxoR73G7nhC8EyCFMwrIMK99O92tGFWOWqaM\nb2r9o0IwQDAdBgNVHQ4EFgQUDBH9jc9zvi3un83TFPI/tHhMF8YwHwYDVR0jBBgw\nFoAU+m+L2p3gV7JPexhVX6PFWMFy9cowCgYIKoZIzj0EAwIDSAAwRQIgM5zSdrUY\n7f0QG3cq+5MVL/rAb4k4Ok6vQIE63zRwQt8CIQCsQ7NQV9Sk8y3YU0R3HGUlOOMI\nKKmII4ZjIWrZs7Qr/A==\n-----END CERTIFICATE-----\n"
+}
+```
 
 # Mutual TLS Test Server
 
