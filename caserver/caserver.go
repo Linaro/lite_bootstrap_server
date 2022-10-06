@@ -42,7 +42,8 @@ func crPost(w http.ResponseWriter, r *http.Request) {
 	case "application/cbor":
 		use_cbor = true
 	case "application/json":
-		//
+	case "":
+		// Default to JSON if not Content-Type provided (curl, etc.)
 	default:
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(`{"error": "Bad request: Content-Type must be application/cbor or application/json"}`))
@@ -195,7 +196,8 @@ func csGet(w http.ResponseWriter, r *http.Request) {
 	case "application/cbor":
 		use_cbor = true
 	case "application/json":
-		//
+	case "":
+		// Default to JSON if not Content-Type provided (curl, etc.)
 	default:
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(`{"error": "bad request: Content-Type must be application/cbor or application/json"}`))
