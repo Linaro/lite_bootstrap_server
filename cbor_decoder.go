@@ -17,7 +17,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/fxamacker/cbor/v2"
-	"github.com/microbuilder/linaroca/protocol"
+	"github.com/Linaro/lite_bootstrap_server/protocol"
 	"io/ioutil"
 	"os"
 )

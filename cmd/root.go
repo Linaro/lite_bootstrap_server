@@ -15,8 +15,8 @@ var cfgFile string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "linaroca",
-	Short: "Linaro certificate authority server",
+	Use:   "liteboot",
+	Short: "Linaro bootstrap and certificate authority server",
 	Long:  `A proof-of-concept certificate authority (CA) and management tool.`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
@@ -38,7 +38,7 @@ func init() {
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.linaroca.yaml)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.liteboot.yaml)")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
@@ -58,10 +58,10 @@ func initConfig() {
 			os.Exit(1)
 		}
 
-		// Search config in home directory with name ".linaroca" (without extension).
+		// Search config in home directory with name ".liteboot" (without extension).
 		viper.AddConfigPath(".")
 		viper.AddConfigPath(home)
-		viper.SetConfigName(".linaroca")
+		viper.SetConfigName(".liteboot")
 	}
 
 	viper.AutomaticEnv() // read in environment variables that match

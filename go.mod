@@ -1,4 +1,4 @@
-module github.com/microbuilder/linaroca
+module github.com/Linaro/lite_bootstrap_server
 
 go 1.14
 

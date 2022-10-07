@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/microbuilder/linaroca/signer"
+	"github.com/Linaro/lite_bootstrap_server/signer"
 )
 
 // handleCSR processes an incoming CSR, and if valid, builds a

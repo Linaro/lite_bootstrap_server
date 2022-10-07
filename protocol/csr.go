@@ -1,4 +1,4 @@
-package protocol // github.com/microbuilder/linaroca/protocol
+package protocol // github.com/Linaro/lite_bootstrap_server/protocol
 
 type CSRRequest struct {
 	_   struct{} `cbor:",toarray"`

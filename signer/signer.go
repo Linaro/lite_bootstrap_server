@@ -1,6 +1,6 @@
 // Package signer combines some utilities for management behind the
 // keys involved in certificates.
-package signer // "github.com/microbuilder/linaroca/signer"
+package signer // "github.com/Linaro/lite_bootstrap_server/signer"
 
 import (
 	"bytes"
