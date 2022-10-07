@@ -42,7 +42,8 @@ func crPost(w http.ResponseWriter, r *http.Request) {
 	case "application/cbor":
 		use_cbor = true
 	case "application/json":
-		//
+	case "":
+		// Default to JSON if not Content-Type provided (curl, etc.)
 	default:
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(`{"error": "Bad request: Content-Type must be application/cbor or application/json"}`))
@@ -195,7 +196,8 @@ func csGet(w http.ResponseWriter, r *http.Request) {
 	case "application/cbor":
 		use_cbor = true
 	case "application/json":
-		//
+	case "":
+		// Default to JSON if not Content-Type provided (curl, etc.)
 	default:
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(`{"error": "bad request: Content-Type must be application/cbor or application/json"}`))
@@ -406,6 +408,66 @@ func home(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Linaro CA HTTP server\n"))
 }
 
+// X509 Certificate copy handler
+func ccGet(w http.ResponseWriter, r *http.Request) {
+	pathParams := mux.Vars(r)
+
+	// Check Content-Type request
+	use_cbor := false
+	switch r.Header.Get("Content-Type") {
+	case "application/cbor":
+		use_cbor = true
+	case "application/json":
+	case "":
+		// Default to JSON if not Content-Type provided (curl, etc.)
+	default:
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{"error": "bad request: Content-Type must be application/cbor or application/json"}`))
+		return
+	}
+	// Parse serial number in request
+	serialNumber, ok := pathParams["serial"]
+	ser := new(big.Int)
+	ser, ok = ser.SetString(serialNumber, 10)
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{"error": "invalid request"}`))
+		return
+	}
+
+	cert, err := db.GetCertBySerial(ser)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{"error": "invalid serial number"}`))
+		fmt.Println("cs:", err)
+		return
+	}
+
+	// Convert DER output to PEM
+	pemout := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: cert})
+
+	// CBOR response handler
+	if use_cbor {
+		w.Header().Set("Content-Type", "application/cbor")
+		w.WriteHeader(http.StatusOK)
+		enc := cbor.NewEncoder(w)
+		enc.Encode(protocol.CCResponse{
+			Status: 0,
+			Cert:   string(pemout),
+		})
+		fmt.Println(w)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	enc := json.NewEncoder(w)
+	err = enc.Encode(protocol.CCResponse{
+		Status: 0,
+		Cert:   string(pemout),
+	})
+}
+
 // Start the HTTP Server
 func Start(port int16) {
 	var err error
@@ -435,6 +497,7 @@ func Start(port int16) {
 	api.HandleFunc("/kur", kurPost).Methods(http.MethodPost)
 	api.HandleFunc("/krr", krrPost).Methods(http.MethodPost)
 	api.HandleFunc("/ccs", ccsGet).Methods(http.MethodGet)
+	api.HandleFunc("/cc/{serial}", ccGet).Methods(http.MethodGet)
 	api.HandleFunc("", notFound)
 
 	// Handle standard requests. Routes are tested in the order they are added,
