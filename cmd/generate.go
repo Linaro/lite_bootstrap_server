@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"path"
 
-	"github.com/microbuilder/linaroca/signer"
+	"github.com/Linaro/lite_bootstrap_server/signer"
 	"github.com/spf13/cobra"
 )
 

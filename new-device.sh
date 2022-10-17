@@ -12,7 +12,7 @@ set -e
 # encoded CSR file can then be sent to the CA server using `wget`,
 # which will return the generated certificate as a CBOR payload.
 
-# Please follow the steps in `README.md` and make sure the linaroca
+# Please follow the steps in `README.md` and make sure the liteboot
 # server is running (`run-server.sh`), before running this script.
 
 : ${CAHOSTNAME:=$(hostname)}

@@ -1,4 +1,4 @@
-package protocol // github.com/microbuilder/linaroca/protocol
+package protocol // github.com/Linaro/lite_bootstrap_server/protocol
 
 import "math/big"
 

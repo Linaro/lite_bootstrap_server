@@ -2,4 +2,4 @@
 // cloud service.  The type of cloud service used will be determined
 // by configuration.
 
-package cloud // import "github.com/microbuilder/linaroca/cloud"
+package cloud // import "github.com/Linaro/lite_bootstrap_server/cloud"

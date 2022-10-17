@@ -4,7 +4,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/microbuilder/linaroca/cloud"
+	"github.com/Linaro/lite_bootstrap_server/cloud"
 )
 
 const interval = 10 * time.Second

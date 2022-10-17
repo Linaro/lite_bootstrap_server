@@ -1,7 +1,7 @@
 // Package cadb manages the persistent state necessary for the mini CA
-// that linaroCA acts as.
+// that liteboot acts as.
 
-package cadb // import "github.com/microbuilder/linaroca/cadb"
+package cadb // import "github.com/Linaro/lite_bootstrap_server/cadb"
 
 import (
 	"database/sql"

@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"github.com/microbuilder/linaroca/caserver"
-	"github.com/microbuilder/linaroca/mtlsserver"
+	"github.com/Linaro/lite_bootstrap_server/caserver"
+	"github.com/Linaro/lite_bootstrap_server/mtlsserver"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )

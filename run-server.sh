@@ -7,11 +7,11 @@ if [ ! -f certs/CA.crt -o ! -f certs/CA.key ]; then
 	exit 1
 fi
 
-# Build linaroca
-go build || exit 1
+# Build liteboot
+go build -o liteboot || exit 1
 
 # Run the server, listening by default on port 1443.
-./linaroca server start -p 1443
+./liteboot server start -p 1443
 
 # This will serve web pages from root, and handle REST API requests
 # from the `/api/v1` sub-path, with page routing handled in

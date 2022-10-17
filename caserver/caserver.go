@@ -18,8 +18,8 @@ import (
 	"github.com/fxamacker/cbor/v2"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
-	"github.com/microbuilder/linaroca/cadb"
-	"github.com/microbuilder/linaroca/protocol"
+	"github.com/Linaro/lite_bootstrap_server/cadb"
+	"github.com/Linaro/lite_bootstrap_server/protocol"
 	"github.com/spf13/viper"
 )
 
