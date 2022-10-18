@@ -14,7 +14,7 @@ cr.*
 *.so
 *.dylib
 
-linaroca
+liteboot
 
 # Test binary, built with `go test -c`
 *.test
