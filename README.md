@@ -82,9 +82,11 @@ deployment.
 The application will attempt to determine the hostname to use based on the
 following order of precedence:
 
-1. Check for the `$CAHOSTNAME` environment variable
-2. Check the system hostname (same value as `hostname` in shell)
-3. Default to `localhost` as a last resort
+1. Via the `--hostname` parameter in `server start`
+2. Via a `hostname` entry in the `.liteboot.toml` config file
+3. Check for the `$CAHOSTNAME` environment variable
+4. Check the system hostname (same value as `hostname` in shell)
+5. Default to `localhost` as a last resort
 
 Set the hostname before starting the server via:
 
