@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
-	"os"
 	"strconv"
 )
 
@@ -51,20 +50,7 @@ func handleConnection(c net.Conn) {
 }
 
 // Starts a TCP server with mTLS authentication
-func StartTCP(port int16) {
-	// Get the hostname from the $CAHOSTNAME environment variable
-	hostname := os.Getenv("CAHOSTNAME")
-	if hostname == "" {
-		// Fall back to the system hostname (bash $HOSTNAME, zsh $HOST) if
-		// nothing is defined.
-		var err error
-		hostname, err = os.Hostname()
-		if (err != nil) || (hostname == "") {
-			// As a last resort, fall back to localhost
-			hostname = "localhost"
-		}
-	}
-
+func StartTCP(hostname string, port int16) {
 	// Create a certificate pool with the CA certificate
 	certPool := x509.NewCertPool()
 	caCert, err := ioutil.ReadFile("certs/CA.crt")

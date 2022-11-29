@@ -15,11 +15,11 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/Linaro/lite_bootstrap_server/cadb"
+	"github.com/Linaro/lite_bootstrap_server/protocol"
 	"github.com/fxamacker/cbor/v2"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
-	"github.com/Linaro/lite_bootstrap_server/cadb"
-	"github.com/Linaro/lite_bootstrap_server/protocol"
 	"github.com/spf13/viper"
 )
 
@@ -469,7 +469,7 @@ func ccGet(w http.ResponseWriter, r *http.Request) {
 }
 
 // Start the HTTP Server
-func Start(port int16) {
+func Start(hostname string, port int16) {
 	var err error
 	db, err = cadb.Open()
 	if err != nil {
@@ -509,21 +509,7 @@ func Start(port int16) {
 		log.Fatal("Server certificate and key not found. See README.md.")
 	}
 
-	// Get the hostname from the $CAHOSTNAME environment variable
-	hostname := os.Getenv("CAHOSTNAME")
-	if hostname == "" {
-		// Fall back to the system hostname (bash $HOSTNAME, zsh $HOST) if
-		// nothing is defined.
-		var err error
-		hostname, err = os.Hostname()
-		if (err != nil) || (hostname == "") {
-			// As a last resort, fall back to localhost
-			hostname = "localhost"
-		}
-	}
-
 	server := &http.Server{
-		// Use the system hostname.
 		Addr:    hostname + ":" + strconv.Itoa(int(port)),
 		Handler: r,
 

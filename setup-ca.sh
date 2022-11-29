@@ -15,9 +15,17 @@ if [[ "${TRACE-0}" == "1" ]]; then
     set -o xtrace
 fi
 
+# Check for too many parameters
+if [ $# -gt 1 ]
+  then
+    echo "Too many paramters provided."
+	echo "Run './setup-ca.sh -h' for help."
+	exit 1
+fi
+
 # Check if the first arg is -h or --help
 if [[ "${1-}" =~ ^-*h(elp)?$ ]]; then
-    echo "Usage: ./setup-ca.sh
+    echo "Usage: ./setup-ca.sh [hostname]
 
 Generates private keys and certificates for the CA, as well as the TLS
 server used by the REST API.
@@ -38,30 +46,33 @@ You can view the content of the certificates via:
 
 HOSTNAME
 --------
-If you wish to use a specific HOSTNAME for the servers, set the correct value
-before running this script via:
-
-   $ export CAHOSTNAME=localhost
-
-NOTE: 'localhost' is useful for testing, particularly if you are behing a NAT,
-but won't allow access from a remote device. In order for this server to work
-in that network topology, you'll need to set CAHOSTNAME to an actual DNS name
-that resolves to this host.
-
-This hostname must be used consistently in your network layout, since the name
-will be included in the generated certificates, and the TLS handshake will fail
+A consistent hostname must be used in your network layout, since the name will
+be included in the generated certificates, and the TLS handshake will fail
 if the hostname used by the servers and the value defined in the certificate(s)
 don't match.
+
+For this script, which generates the SERVER certificate that includes the
+hostname, you can set the hostname value through several mechanism:
+
+   1. Via the '[hostname]' parameter when calling this script, i.e.:
+
+      $ ./setup-ca.sh myhostname.local
+
+   2. Setting the 'CAHOSTNAME' environment variable before running this script:
+
+      $ export CAHOSTNAME=myhostname.local
+      $ ./setup-ca.sh
+
+   3. Not doing anything, which will cause the script to evaluate the system
+      hostname via the 'hostname' command.
+
+NOTE: 'localhost' is useful for testing, particularly if you are behind a NAT,
+but won't allow access from a remote device. In order for this server to work
+in that network topology, you'll need to set the hostname to a valid DNS name
+that resolves to this host.
 "
     exit
 fi
-
-# Hostname for certificates.  'localhost' is good for testing,
-# especially if you are behind a NAT.  However, it won't allow access
-# from a remote device.  In order for this to work, you'll need to set
-# CAHOSTNAME to an actual DNS name that resolves to this host.  If
-# everything is behind a NAT, the name can resolve to a local address.
-: "${CAHOSTNAME:=$(hostname)}"
 
 # Check for previous build artifacts
 if [ -f certs/CA.crt ] || [ -f certs/CA.key ] || \
@@ -81,6 +92,16 @@ then
 	echo "Run 'rm CADB.db' to delete it first."
 	echo ""
 	exit 1
+fi
+
+# Resolve hostname
+if [ $# -eq 1 ]
+  then
+    # Use command line parameter for hostname value if present
+    HOSTNAME=$1
+  else
+    # Check for CAHOSTNAME env variable, default to 'hostname' cmd if undefined
+    HOSTNAME=${CAHOSTNAME:-$(hostname)}
 fi
 
 # Setup the Certificate Authority and server certificates.  In
@@ -109,7 +130,7 @@ openssl ecparam -name secp256r1 -genkey -out certs/SERVER.key
 # ensure we are talking to the right server.
 openssl req -new -sha256 -key certs/SERVER.key \
 	-out certs/SERVER.csr \
-	-subj "/O=Linaro, LTD/CN=$CAHOSTNAME"
+	-subj "/O=Linaro, LTD/CN=$HOSTNAME"
 
 # Create a config snippet to add proper extensions to this key.
 echo "subjectKeyIdentifier=hash" > exts$$.ext
@@ -117,7 +138,7 @@ echo "authorityKeyIdentifier=keyid,issuer" >> exts$$.ext
 echo "basicConstraints = critical, CA:FALSE" >> exts$$.ext
 echo "keyUsage = critical, digitalSignature" >> exts$$.ext
 echo "extendedKeyUsage = serverAuth" >> exts$$.ext
-echo "subjectAltName = DNS:$CAHOSTNAME" >> exts$$.ext
+echo "subjectAltName = DNS:$HOSTNAME" >> exts$$.ext
 
 # Sign this with the CA.
 openssl x509 -req -sha256 \

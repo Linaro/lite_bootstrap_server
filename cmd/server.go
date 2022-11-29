@@ -15,6 +15,9 @@ certificate signing requests (CSRs), and verify previous device registrations.`,
 func init() {
 	rootCmd.AddCommand(serverCmd)
 
+	// Allow setting the hostname as a parameter
+	serverCmd.PersistentFlags().String("hostname", "", "Hostname override")
+
 	// Allow a custom port number
 	serverCmd.PersistentFlags().Int16P("port", "p", 1443, "CA port number")
 	serverCmd.PersistentFlags().Int16P("mport", "m", 8443, "mTLS port number")
@@ -24,6 +27,7 @@ func init() {
 	serverCmd.PersistentFlags().String("resourcegroup", "resourcegroup", "Azure Resource Group")
 	serverCmd.PersistentFlags().String("mqttport", "mqttport", "Azure MQTT Port")
 
+	viper.BindPFlag("server.hostname", serverCmd.PersistentFlags().Lookup("hostname"))
 	viper.BindPFlag("server.hubname", serverCmd.PersistentFlags().Lookup("hubname"))
 	viper.BindPFlag("server.resourcegroup", serverCmd.PersistentFlags().Lookup("resourcegroup"))
 	viper.BindPFlag("server.port", serverCmd.PersistentFlags().Lookup("port"))

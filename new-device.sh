@@ -15,9 +15,17 @@ if [[ "${TRACE-0}" == "1" ]]; then
     set -o xtrace
 fi
 
+# Check for too many parameters
+if [ $# -gt 1 ]
+  then
+    echo "Too many paramters provided."
+	echo "Run './new-device.sh -h' for help."
+	exit 1
+fi
+
 # Check if the first arg is -h or --help
 if [[ "${1-}" =~ ^-*h(elp)?$ ]]; then
-    echo "Usage: ./new-device.sh
+    echo "Usage: ./new-device.sh [hostname]
 
 Simulates provisioning of a new client device.
 
@@ -40,13 +48,34 @@ You can view the content of the certificate via:
 
 HOSTNAME
 --------
-The bootstrap server's HOSTNAME must be correctly specified, and can be set
-before running this script via:
+A consistent hostname must be used in your network layout, since the name will
+be included in the generated device certificate, and the TLS handshake will
+fail if the hostname used by the device certificate and the server certificate
+don't match.
 
-   $ export CAHOSTNAME=localhost
+For this script, which generates a device certificate that includes the
+hostname in the ORG field of the certificate subject, you can set the hostname
+value through several mechanism:
+
+   1. Via the '[hostname]' parameter when calling this script, i.e.:
+
+      $ ./new-device.sh myhostname.local
+
+   2. Setting the 'CAHOSTNAME' environment variable before running this script:
+
+      $ export CAHOSTNAME=myhostname.local
+      $ ./new-device.sh
+
+   3. Not doing anything, which will cause the script to evaluate the system
+      hostname via the 'hostname' command.
+
+NOTE: 'localhost' is useful for testing, particularly if you are behind a NAT,
+but won't allow access from a remote device. In order for this server to work
+in that network topology, you'll need to set the hostname to a valid DNS name
+that resolves to this host.
 
 If you get an error like 'failed: Connection refused', make sure that you are
-setting the correct value to CAHOSTNAME before running this script.
+setting the correct hostname value before running this script.
 "
     exit
 fi
@@ -63,7 +92,15 @@ fi
 # Please follow the steps in `README.md` and make sure the liteboot
 # server is running (`run-server.sh`), before running this script.
 
-: "${CAHOSTNAME:=$(hostname)}"
+# Resolve hostname
+if [ $# -eq 1 ]
+  then
+    # Use command line parameter for hostname value if present
+    HOSTNAME=$1
+  else
+    # Check for CAHOSTNAME env variable, default to 'hostname' cmd if undefined
+    HOSTNAME=${CAHOSTNAME:-$(hostname)}
+fi
 
 # Generate a device ID.  BSD's uuidgen outputs uppercase, so conver
 # that here.
@@ -79,7 +116,7 @@ openssl ecparam -name prime256v1 -genkey -out "$DEVPATH.key"
 openssl req -new \
 	-key "$DEVPATH.key" \
 	-out "$DEVPATH.csr" \
-	-subj "/O=$CAHOSTNAME/CN=$DEVID/OU=LinaroCA Device Cert - Signing"
+	-subj "/O=$HOSTNAME/CN=$DEVID/OU=LinaroCA Device Cert - Signing"
 
 # Convert this CSR to cbor.
 go run make_csr_cbor.go -in "$DEVPATH.csr" -out "$DEVPATH.cbor"
@@ -90,7 +127,7 @@ wget --ca-certificate=certs/SERVER.crt \
 	--private-key=certs/BOOTSTRAP.key \
 	--post-file "$DEVPATH.cbor" \
 	--header "Content-Type: application/cbor" \
-	"https://$CAHOSTNAME:1443/api/v1/cr" \
+	"https://$HOSTNAME:1443/api/v1/cr" \
 	-O "$DEVPATH.rsp"
 
 # When this is successfully processed by the CA, it will return a DER
