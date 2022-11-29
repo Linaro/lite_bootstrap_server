@@ -15,9 +15,17 @@ if [[ "${TRACE-0}" == "1" ]]; then
     set -o xtrace
 fi
 
+# Check for too many parameters
+if [ $# -gt 1 ]
+  then
+    echo "Too many paramters provided."
+	echo "Run './run-server.sh -h' for help."
+	exit 1
+fi
+
 # Check if the first arg is -h or --help
 if [[ "${1-}" =~ ^-*h(elp)?$ ]]; then
-    echo "Usage: ./run-server.sh
+    echo "Usage: ./run-server.sh [hostname]
 
 Starts the bootstrap server and CA.
 
@@ -26,11 +34,18 @@ HOSTNAME
 If you wish to use a specific HOSTNAME for the servers, set the correct value
 before running this script via one of:
 
-   - Adding 'hostname = myhostname.local' to .liteboot.toml
-   - Running the following command before executing this script:
-     $ export CAHOSTNAME=myhostname.local
+   1. Setting the optional [hostname] parameter in this script:
 
-NOTE: 'localhost' is useful for testing, particularly if you are behing a NAT,
+      $ ./run-server.sh myhostname.local
+
+   2. Adding 'hostname = \"myhostname.local\"' to .liteboot.toml
+
+   3. Setting 'CAHOSTNAME' before executing this script:
+
+      $ export CAHOSTNAME=myhostname.local
+      $ ./run-server.sh
+
+NOTE: 'localhost' is useful for testing, particularly if you are behind a NAT,
 but won't allow access from a remote device. In order for this server to work
 in that network topology, you'll need to set the hostname to a valid DNS name
 that resolves to this host.
@@ -46,16 +61,23 @@ setting the correct hostname value before running this script.
     exit
 fi
 
-if [ ! -f certs/CA.crt -o ! -f certs/CA.key ]; then
+if [ ! -f certs/CA.crt ] || [ ! -f certs/CA.key ]; then
 	echo "Server certificates not present.  Please run ./setup-ca.sh"
 	exit 1
 fi
 
-# Build liteboot
+# Build liteboot if necessary
 go build -o liteboot || exit 1
 
 # Run the server, listening by default on port 1443.
-./liteboot server start -p 1443
+if [ $# -eq 1 ]
+  then
+    # Use command line parameter for hostname value
+    ./liteboot server start -p 1443 --hostname="$1"
+  else
+    # Let liteboot resolve hostname on it's own
+    ./liteboot server start -p 1443
+fi
 
 # This will serve web pages from root, and handle REST API requests
 # from the `/api/v1` sub-path, with page routing handled in
