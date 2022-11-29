@@ -39,13 +39,15 @@ You can view the content of the certificates via:
 HOSTNAME
 --------
 If you wish to use a specific HOSTNAME for the servers, set the correct value
-before running this script via:
+before running this script via one of:
 
-   $ export CAHOSTNAME=localhost
+   - Adding 'hostname = myhostname.local' to .liteboot.toml
+   - Running the following command before executing this script:
+     $ export CAHOSTNAME=myhostname.local
 
 NOTE: 'localhost' is useful for testing, particularly if you are behing a NAT,
 but won't allow access from a remote device. In order for this server to work
-in that network topology, you'll need to set CAHOSTNAME to an actual DNS name
+in that network topology, you'll need to set the hostname to a valid DNS name
 that resolves to this host.
 
 This hostname must be used consistently in your network layout, since the name

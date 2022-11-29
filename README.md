@@ -66,6 +66,9 @@ hubname = "azure-hub-name"
 resourcegroup = "azure-resource-group"
 mqttport = 8883
 
+# Set the server hostname
+# hostname = "myhostname.local"
+
 # CA port number (REST API)
 port = 1443
 
