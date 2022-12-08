@@ -11,10 +11,18 @@ var schema = []string{
 	`CREATE TABLE settings (key STRING PRIMARY KEY,
 		value STRING NOT NULL)`,
 
+	// owners holds information on vendors/OEMs who own devices managed
+	// by this server. Each owner will be associated with an intermediate
+	// signing certificate, which is used to sign device CSRs for that vendor.
+	`CREATE TABLE owners (id STRING PRIMARY KEY,
+		name STRING NOT NULL,
+		valid INTEGER NOT NULL)`,
+
 	// devices holds all devices known to the system.  The id is
 	// the identifier from the CSR.  `registered` indicates that
 	// the service considers this to be a valid device.
 	`CREATE TABLE devices (id STRING PRIMARY KEY,
+		owner STRING NOT NULL REFERENCES owners(id),
 		registered INTEGER NOT NULL)`,
 
 	// certs holds all of the certificates we've ever issued.
@@ -28,7 +36,7 @@ var schema = []string{
 		PRIMARY KEY (id, serial))`,
 }
 
-const schemaVersion = "20220215a"
+const schemaVersion = "20221206a"
 
 func (conn *Conn) checkSchema() error {
 	// Query the settings table for the schema version.

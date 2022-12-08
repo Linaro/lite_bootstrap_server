@@ -67,15 +67,14 @@ func (conn *Conn) tryGetSerial() (*big.Int, error) {
 }
 
 // AddCert adds a newly generated certificate to the database.
-func (conn *Conn) AddCert(id string, name string, serial *big.Int, keyId []byte, expiry time.Time, cert []byte) error {
+func (conn *Conn) AddCert(id string, name string, serial *big.Int, keyId []byte, expiry time.Time, cert []byte, owner string) error {
 	tx, err := conn.db.Begin()
 	if err != nil {
 		return err
 	}
 
-	// Query the device database to see if we need to create an
-	// entry for it.
-	row := tx.QueryRow(`SELECT COUNT(*) FROM devices WHERE id = ?`, id)
+	// Make sure the owner exists
+	row := tx.QueryRow(`SELECT COUNT(*) FROM owners WHERE id = ?`, owner)
 	var count int
 	err = row.Scan(&count)
 	if err != nil {
@@ -84,8 +83,21 @@ func (conn *Conn) AddCert(id string, name string, serial *big.Int, keyId []byte,
 	}
 
 	if count == 0 {
-		_, err = tx.Exec(`INSERT INTO devices (id, registered) VALUES (?, ?)`,
-			id, 0)
+		return fmt.Errorf("owner %s: unknown owner", owner)
+	}
+
+	// Query the device database to see if we need to create an
+	// entry for it.
+	row = tx.QueryRow(`SELECT COUNT(*) FROM devices WHERE id = ?`, id)
+	err = row.Scan(&count)
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	if count == 0 {
+		_, err = tx.Exec(`INSERT INTO devices (id, owner, registered) VALUES (?, ?, ?)`,
+			id, owner, 0)
 		if err != nil {
 			_ = tx.Rollback()
 			return err
@@ -98,6 +110,40 @@ func (conn *Conn) AddCert(id string, name string, serial *big.Int, keyId []byte,
 	if err != nil {
 		_ = tx.Rollback()
 		return err
+	}
+
+	err = tx.Commit()
+	return err
+}
+
+// AddOwner adds a new device owner to the database.
+func (conn *Conn) AddOwner(id string, name string) error {
+	tx, err := conn.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	// Check if this owner already exists
+	row := tx.QueryRow(`SELECT COUNT(*) FROM owners WHERE id = ?`, id)
+	var count int
+	err = row.Scan(&count)
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	if count != 0 {
+		return fmt.Errorf("owner %s: already exists", id)
+	}
+
+	// Register the new owner
+	if count == 0 {
+		_, err = tx.Exec(`INSERT INTO owners (id, name, valid) VALUES (?, ?, ?)`,
+			id, name, 1)
+		if err != nil {
+			_ = tx.Rollback()
+			return err
+		}
 	}
 
 	err = tx.Commit()
@@ -153,6 +199,28 @@ func (conn *Conn) CertsByUUID(id uuid.UUID) ([]big.Int, error) {
 		}
 		serbi := big.NewInt(int64(serial))
 		result = append(result, *serbi)
+	}
+
+	return result, nil
+}
+
+// DevicesByOwner returns a list of all devices associated with an owner
+func (conn *Conn) DevicesByOwner(owner string) ([]string, error) {
+	var result []string
+
+	rows, err := conn.db.Query(`SELECT id FROM devices WHERE owner = ?`, owner)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var id string
+		err = rows.Scan(&id)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, id)
 	}
 
 	return result, nil

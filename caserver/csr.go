@@ -41,7 +41,8 @@ func handleCSR(asn1Data []byte) ([]byte, error) {
 
 	id := cert.Subject.CommonName
 	name := cert.Subject.OrganizationalUnit[0]
-	err = db.AddCert(id, name, ser, cert.SubjectKeyId, expiry, signedCert)
+	owner := "d7:53:d0:ea:f9:65:8d:80" // TODO: Track proper owner UUID
+	err = db.AddCert(id, name, ser, cert.SubjectKeyId, expiry, signedCert, owner)
 	if err != nil {
 		fmt.Printf("Add cert err: %v\n", err)
 		return nil, err
