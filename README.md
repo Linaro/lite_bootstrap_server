@@ -82,8 +82,8 @@ The hostname is important since it will be included in the subject line of
 certificates signed by liteboot, and be part of the SERVER certificate used to
 establish a TLS connection to the server.
 
-The **same hostname** must be used in the SERVER certificate, and in the
-subject line of DEVICE certificates, or the TLS connection will be refused.
+The **same hostname** must be used in the SERVER certificate or the
+TLS connection will be refused.
 
 This application will attempt to determine the hostname to use for the
 server(s) based on the following order of precedence:

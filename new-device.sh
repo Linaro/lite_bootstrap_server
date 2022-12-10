@@ -106,6 +106,7 @@ fi
 # that here.
 DEVID=$(uuidgen | tr '[:upper:]' '[:lower:]')
 DEVPATH=certs/$DEVID
+DEVVENDOR="Test Vendor"
 
 echo New device: "$DEVID"
 
@@ -116,7 +117,7 @@ openssl ecparam -name prime256v1 -genkey -out "$DEVPATH.key"
 openssl req -new \
 	-key "$DEVPATH.key" \
 	-out "$DEVPATH.csr" \
-	-subj "/O=$HOSTNAME/CN=$DEVID/OU=LinaroCA Device Cert - Signing"
+	-subj "/O=$DEVVENDOR/CN=$DEVID/OU=LinaroCA Device Cert - Signing"
 
 # Convert this CSR to cbor.
 go run make_csr_cbor.go -in "$DEVPATH.csr" -out "$DEVPATH.cbor"
