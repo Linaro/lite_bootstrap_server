@@ -19,6 +19,9 @@ var ErrSessionFailure = errors.New("unable to open session with slot 0")
 var ErrLoginFailure = errors.New("unable to login to slot 0 with the specific pin")
 var ErrQueryFailure = errors.New("unable to execute the requested PKCS#11 api call")
 
+var CA_KEY_LABEL = "LITE Root CA"
+var CA_KEY_UUID = []byte{0xd0, 0x61, 0x9e, 0x62, 0xdd, 0xa2, 0x43, 0xb4, 0xb5, 0x3c, 0x85, 0x0b, 0x07, 0xf0, 0x78, 0x1c}
+
 // Protoype for pkcs#11 functions to run after connection validation in exec
 type execFn func(p *pkcs11.Ctx, s pkcs11.SessionHandle) error
 
@@ -234,6 +237,33 @@ func FindObjectsByUUID(u uuid.UUID, max int) error {
 			if err := displayObject(p, s, obj); err != nil {
 				return err
 			}
+		}
+
+		return nil
+	}
+
+	return exec(f)
+}
+
+func CreateRootCAKey() error {
+	var f = func(p *pkcs11.Ctx, s pkcs11.SessionHandle) error {
+		// Private key settins
+		t := []*pkcs11.Attribute{
+			pkcs11.NewAttribute(pkcs11.CKA_CLASS, pkcs11.CKO_PRIVATE_KEY),
+			pkcs11.NewAttribute(pkcs11.CKA_KEY_TYPE, pkcs11.CKK_EC),
+			pkcs11.NewAttribute(pkcs11.CKA_TOKEN, true),
+			pkcs11.NewAttribute(pkcs11.CKA_PRIVATE, true),
+			pkcs11.NewAttribute(pkcs11.CKA_SENSITIVE, true),
+			pkcs11.NewAttribute(pkcs11.CKA_LABEL, CA_KEY_LABEL),
+			pkcs11.NewAttribute(pkcs11.CKA_ID, CA_KEY_UUID),
+			pkcs11.NewAttribute(pkcs11.CKA_SIGN, true),
+			pkcs11.NewAttribute(pkcs11.CKA_EXTRACTABLE, false),
+			// TODO: Add other required attributes
+		}
+
+		_, err := p.CreateObject(s, t)
+		if err != nil {
+			return ErrQueryFailure
 		}
 
 		return nil
