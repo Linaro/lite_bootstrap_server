@@ -48,14 +48,10 @@ You can view the content of the certificate via:
 
 HOSTNAME
 --------
-A consistent hostname must be used in your network layout, since the name will
-be included in the generated device certificate, and the TLS handshake will
-fail if the hostname used by the device certificate and the server certificate
-don't match.
+A consistent hostname must be used in your network layout or the TLS handshake
+will fail.
 
-For this script, which generates a device certificate that includes the
-hostname in the ORG field of the certificate subject, you can set the hostname
-value through several mechanism:
+For this script, you can set the hostname value through several mechanism:
 
    1. Via the '[hostname]' parameter when calling this script, i.e.:
 
@@ -102,7 +98,7 @@ if [ $# -eq 1 ]
     HOSTNAME=${CAHOSTNAME:-$(hostname)}
 fi
 
-# Generate a device ID.  BSD's uuidgen outputs uppercase, so conver
+# Generate a device ID.  BSD's uuidgen outputs uppercase, so convert
 # that here.
 DEVID=$(uuidgen | tr '[:upper:]' '[:lower:]')
 DEVPATH=certs/$DEVID
@@ -117,7 +113,7 @@ openssl ecparam -name prime256v1 -genkey -out "$DEVPATH.key"
 openssl req -new \
 	-key "$DEVPATH.key" \
 	-out "$DEVPATH.csr" \
-	-subj "/O=$DEVVENDOR/CN=$DEVID/OU=LinaroCA Device Cert - Signing"
+	-subj "/O=$DEVVENDOR/CN=$DEVID/OU=Signing"
 
 # Convert this CSR to cbor.
 go run make_csr_cbor.go -in "$DEVPATH.csr" -out "$DEVPATH.cbor"
