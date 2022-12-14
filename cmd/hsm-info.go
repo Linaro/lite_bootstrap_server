@@ -77,6 +77,20 @@ var hsmInfoCmd = &cobra.Command{
 	},
 }
 
+var hsmCreateKeyCmd = &cobra.Command{
+	Use:   "create",
+	Short: "Create a PKCS#11 Keypair",
+	Long:  "Create a new pkcs#11 keypair",
+	Run: func(cmd *cobra.Command, args []string) {
+		err := hsm.CreateRootCAKey()
+		if err != nil {
+			fmt.Printf("pkcs#11 error: %s\n", err)
+			os.Exit(1)
+		}
+	},
+}
+
 func init() {
 	hsmCmd.AddCommand(hsmInfoCmd)
+	hsmCmd.AddCommand(hsmCreateKeyCmd)
 }
