@@ -553,8 +553,8 @@ mTLS connections via:
 
 ```bash
 $ openssl s_client \
-  -cert certs/a8c6f808-b659-4f88-affb-40498834c572.crt \
-  -key certs/a8c6f808-b659-4f88-affb-40498834c572.key \
+  -cert certs/f269528d-ff66-4fb0-83d8-e449e0038010.crt \
+  -key certs/f269528d-ff66-4fb0-83d8-e449e0038010.key \
   -CAfile certs/CA.crt \
   -connect MBP2021.lan:8443
 ```
@@ -575,12 +575,17 @@ And liteboot will display details about the client cert in the log output:
 $ ./liteboot server start
 Starting mTLS TCP server on MBP2021.lan:8443
 Starting CA server on port https://MBP2021.lan:1443
-Connection accepted from 127.0.0.1:50231
-Client certificate:
-- Issuer CN: LRC - 20220330062226
-- Subject: CN=a8c6f808-b659-4f88-affb-40498834c572,
-  OU=LinaroCA Device Cert - Signing,O=MBP2021.lan
+Connection accepted from 127.0.0.1:60510
+[Certificate 0]
+  - Subject: CN=f269528d-ff66-4fb0-83d8-e449e0038010,OU=Signing,O=Linaro\, LTD
+  - Serial:  1671014018808547000
+[Certificate 1]
+  - Subject: CN=LRC - 20221129052020,O=Linaro\, LTD
+  - Serial:  2022001129172020
 ```
+
+- `Certificate 0` is the device certificate
+- `Certificate 1` is the CA certificate used to sign certificate 0.
 
 ### Using an invalid client certificate
 
@@ -602,7 +607,8 @@ $ openssl s_client \
   -connect MBP2021.lan:8443
 ```
 
-You should get the following error from liteboot:
+You should get the following error from liteboot, since the device certificate
+has not been signed by our CA:
 
 ```
 Connection accepted from 127.0.0.1:50443
