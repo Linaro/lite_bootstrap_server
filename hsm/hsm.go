@@ -249,22 +249,40 @@ func (h *HSM) FindObjectsByUUID(u uuid.UUID, max int) error {
 	return nil
 }
 
+// Determined with:
+// $ openssl ecparam --name prime256v1 -outform DER | hexdump -C
+var p256Oid []byte = []byte{0x06, 0x08, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x03, 0x01, 0x07}
+
 func (h *HSM) CreateRootCAKey() error {
 	// Private key settins
-	t := []*pkcs11.Attribute{
-		pkcs11.NewAttribute(pkcs11.CKA_CLASS, pkcs11.CKO_PRIVATE_KEY),
-		pkcs11.NewAttribute(pkcs11.CKA_KEY_TYPE, pkcs11.CKK_EC),
+	// t := []*pkcs11.Attribute{
+	// 	pkcs11.NewAttribute(pkcs11.CKA_CLASS, pkcs11.CKO_PRIVATE_KEY),
+	// 	pkcs11.NewAttribute(pkcs11.CKA_KEY_TYPE, pkcs11.CKK_EC),
+	// 	pkcs11.NewAttribute(pkcs11.CKA_TOKEN, true),
+	// 	pkcs11.NewAttribute(pkcs11.CKA_PRIVATE, true),
+	// 	pkcs11.NewAttribute(pkcs11.CKA_SENSITIVE, true),
+	// 	pkcs11.NewAttribute(pkcs11.CKA_LABEL, CA_KEY_LABEL),
+	// 	pkcs11.NewAttribute(pkcs11.CKA_ID, CA_KEY_UUID),
+	// 	pkcs11.NewAttribute(pkcs11.CKA_SIGN, true),
+	// 	pkcs11.NewAttribute(pkcs11.CKA_EXTRACTABLE, false),
+	// 	// TODO: Add other required attributes
+	// }
+
+	pubAtts := []*pkcs11.Attribute{
+		pkcs11.NewAttribute(pkcs11.CKA_VERIFY, true),
 		pkcs11.NewAttribute(pkcs11.CKA_TOKEN, true),
-		pkcs11.NewAttribute(pkcs11.CKA_PRIVATE, true),
-		pkcs11.NewAttribute(pkcs11.CKA_SENSITIVE, true),
-		pkcs11.NewAttribute(pkcs11.CKA_LABEL, CA_KEY_LABEL),
-		pkcs11.NewAttribute(pkcs11.CKA_ID, CA_KEY_UUID),
+		pkcs11.NewAttribute(pkcs11.CKA_EC_PARAMS, p256Oid),
+	}
+	privAtts := []*pkcs11.Attribute{
 		pkcs11.NewAttribute(pkcs11.CKA_SIGN, true),
-		pkcs11.NewAttribute(pkcs11.CKA_EXTRACTABLE, false),
-		// TODO: Add other required attributes
+		pkcs11.NewAttribute(pkcs11.CKA_TOKEN, true),
 	}
 
-	_, err := h.api.CreateObject(h.session, t)
+	mech := []*pkcs11.Mechanism{
+		pkcs11.NewMechanism(pkcs11.CKM_EC_KEY_PAIR_GEN, nil),
+	}
+
+	_, _, err := h.api.GenerateKeyPair(h.session, mech, pubAtts, privAtts)
 	if err != nil {
 		return ErrQueryFailure
 	}
