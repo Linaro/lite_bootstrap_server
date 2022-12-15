@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/viper"
 )
 
+var ErrNoHSM = errors.New("no HSM configured")
 var ErrInvalidParam = errors.New("invalid input parameter")
 var ErrInvalidFilename = errors.New("invalid pkcs#11 module path/filename")
 var ErrInitFailure = errors.New("pkcs#11 module init failure")
@@ -22,110 +23,121 @@ var ErrQueryFailure = errors.New("unable to execute the requested PKCS#11 api ca
 var CA_KEY_LABEL = "LITE Root CA"
 var CA_KEY_UUID = []byte{0xd0, 0x61, 0x9e, 0x62, 0xdd, 0xa2, 0x43, 0xb4, 0xb5, 0x3c, 0x85, 0x0b, 0x07, 0xf0, 0x78, 0x1c}
 
-// Protoype for pkcs#11 functions to run after connection validation in exec
-type execFn func(p *pkcs11.Ctx, s pkcs11.SessionHandle) error
+// An HSM manages a session to a single HSM instance.  Generally,
+// there will only be a single of these instances for a given
+// execution of the program.
+type HSM struct {
+	api     *pkcs11.Ctx
+	session pkcs11.SessionHandle
+}
 
-// exec performs basic error checking for PKCS#11 queries
-func exec(fn execFn) error {
+// NewHSM will attempt to connect to the configured HSM.  It will
+// return ErrNoHSM if no HSM has been configured. Other errors
+// indicate an actual error connecting to the HSM.  `Close()` should
+// be called before exiting, when done with the HSM
+func NewHSM() (*HSM, error) {
+	// Cleanup function, needed due to lack of errdefer in Go.
+	cleanup := func() {}
 	module := viper.GetString("hsm.module")
 	pin := viper.GetString("hsm.pin")
 
 	if module == "" || pin == "" {
-		return ErrInvalidParam
+		return nil, ErrNoHSM
 	}
 
-	// Make sure the specified PKCS#11 shared module actually exists
+	// Make sure the specified PKCS#11 shared module actually
+	// exists
 	_, err := os.Stat(module)
 	if err != nil {
-		return ErrInvalidFilename
+		return nil, ErrInvalidFilename
 	}
 
-	// Try to initialise the shared module
-	p := pkcs11.New(module)
-	if err = p.Initialize(); err != nil {
-		return ErrInitFailure
+	// Try to initialize the shared module
+	api := pkcs11.New(module)
+	if err = api.Initialize(); err != nil {
+		return nil, ErrInitFailure
+	}
+	cleanup = func() {
+		api.Finalize()
+		api.Destroy()
 	}
 
-	defer p.Destroy()
-	defer p.Finalize()
-
-	// Make sure there is a slot defined
-	// ToDo: Check for a specific label (LITEBoot)!
-	slots, err := p.GetSlotList(true)
+	// Get the list of slots.
+	slots, err := api.GetSlotList(true)
 	if err != nil {
-		return ErrMissingSlot
+		cleanup()
+		return nil, ErrMissingSlot
 	}
 
-	// Try to open a new session using slot 0
-	session, err := p.OpenSession(slots[0], pkcs11.CKF_SERIAL_SESSION|pkcs11.CKF_RW_SESSION)
+	// For now, just assume that we can use slot 0.  Ideally, we
+	// would either let the slot id be passed in, or use a
+	// specific name.
+	session, err := api.OpenSession(slots[0], pkcs11.CKF_SERIAL_SESSION|pkcs11.CKF_RW_SESSION)
 	if err != nil {
-		return ErrSessionFailure
+		cleanup()
+		return nil, ErrSessionFailure
 	}
-	defer p.CloseSession(session)
 
-	// Attempt to login to slot 0 using the user context pin
-	if err = p.Login(session, pkcs11.CKU_USER, pin); err != nil {
-		return ErrLoginFailure
+	// Attempt to log into this slot using the provided PIN.
+	if err = api.Login(session, pkcs11.CKU_USER, pin); err != nil {
+		cleanup()
+		return nil, ErrLoginFailure
 	}
-	defer p.Logout(session)
 
-	// PKCS#11 module seems to be OK, run the supplied function if present
-	if fn != nil {
-		err = fn(p, session)
-	}
+	return &HSM{
+		api:     api,
+		session: session,
+	}, nil
+}
+
+// Close frees up the resources used by the pkcs 11 session.
+func (h *HSM) Close() error {
+	err := h.api.Finalize()
+
+	// Free the resources associated, regardless of whether the
+	// finalize was successful or not.
+	h.api.Destroy()
 
 	return err
 }
 
-func TestConnection() error {
-	// No exec function required since we just want to connect and exit
-	return exec(nil)
-}
+func (h *HSM) DisplayInfo() error {
+	info, err := h.api.GetInfo()
 
-func DisplayHSMInfo() error {
-	var f = func(p *pkcs11.Ctx, s pkcs11.SessionHandle) error {
-		info, err := p.GetInfo()
-		if err != nil {
-			return ErrQueryFailure
-		}
-
-		fmt.Printf("HSM:\n")
-		fmt.Printf("  Name: %s\n", info.ManufacturerID)
-		fmt.Printf("  Cryptoki: %v.%v\n", info.CryptokiVersion.Major, info.CryptokiVersion.Minor)
-		fmt.Printf("  Library: %v.%v\n", info.LibraryVersion.Major, info.LibraryVersion.Minor)
-
-		return nil
+	if err != nil {
+		return ErrQueryFailure
 	}
 
-	return exec(f)
+	fmt.Printf("HSM:\n")
+	fmt.Printf("  Name: %s\n", info.ManufacturerID)
+	fmt.Printf("  Cryptoki: %v.%v\n", info.CryptokiVersion.Major, info.CryptokiVersion.Minor)
+	fmt.Printf("  Library: %v.%v\n", info.LibraryVersion.Major, info.LibraryVersion.Minor)
+
+	return nil
 }
 
-func DisplaySlotInfo() error {
-	var f = func(p *pkcs11.Ctx, s pkcs11.SessionHandle) error {
-		sinfo, err := p.GetSessionInfo(s)
-		if err != nil {
-			return ErrQueryFailure
-		}
-
-		fmt.Printf("Slot 0:\n")
-		fmt.Printf("  ID: 0x%x\n", sinfo.SlotID)
-
-		tinfo, err := p.GetTokenInfo(sinfo.SlotID)
-		if err != nil {
-			return ErrQueryFailure
-		}
-
-		fmt.Printf("  Token label: %s\n", tinfo.Label)
-		fmt.Printf("  Serial: %s\n", tinfo.SerialNumber)
-
-		return nil
+func (h *HSM) DisplaySlotInfo() error {
+	sinfo, err := h.api.GetSessionInfo(h.session)
+	if err != nil {
+		return ErrQueryFailure
 	}
 
-	return exec(f)
+	fmt.Printf("Slot 0:\n")
+	fmt.Printf("  ID: 0x%x\n", sinfo.SlotID)
+
+	tinfo, err := h.api.GetTokenInfo(sinfo.SlotID)
+	if err != nil {
+		return ErrQueryFailure
+	}
+
+	fmt.Printf("  Token label: %s\n", tinfo.Label)
+	fmt.Printf("  Serial: %s\n", tinfo.SerialNumber)
+
+	return nil
 }
 
-func displayObject(p *pkcs11.Ctx, s pkcs11.SessionHandle, o pkcs11.ObjectHandle) error {
-	attr, err := p.GetAttributeValue(s, o, []*pkcs11.Attribute{
+func (h *HSM) displayObject(o pkcs11.ObjectHandle) error {
+	attr, err := h.api.GetAttributeValue(h.session, o, []*pkcs11.Attribute{
 		pkcs11.NewAttribute(pkcs11.CKA_LABEL, nil),
 		pkcs11.NewAttribute(pkcs11.CKA_ID, nil),
 		pkcs11.NewAttribute(pkcs11.CKA_KEY_TYPE, nil), // CKK_RSA, CKK_EC, etc.
@@ -171,103 +183,91 @@ func displayObject(p *pkcs11.Ctx, s pkcs11.SessionHandle, o pkcs11.ObjectHandle)
 	return nil
 }
 
-func FindObjectsByLabel(label string, max int) error {
-	var f = func(p *pkcs11.Ctx, s pkcs11.SessionHandle) error {
-		// Set the search parameters
-		t := []*pkcs11.Attribute{
-			pkcs11.NewAttribute(pkcs11.CKA_LABEL, label),
-		}
-
-		if err := p.FindObjectsInit(s, t); err != nil {
-			return ErrQueryFailure
-		}
-
-		// Get the first object that matches t
-		o, _, err := p.FindObjects(s, max)
-		if err != nil {
-			return ErrQueryFailure
-		}
-
-		// Clean up
-		if err = p.FindObjectsFinal(s); err != nil {
-			return ErrQueryFailure
-		}
-
-		// Display matching object
-		fmt.Printf("Found %d objects with label \"%s\"\n", len(o), label)
-		for i, obj := range o {
-			fmt.Printf("  Object %d:\n", i)
-			if err := displayObject(p, s, obj); err != nil {
-				return err
-			}
-		}
-
-		return nil
+func (h *HSM) FindObjectsByLabel(label string, max int) error {
+	// Set the search parameters
+	t := []*pkcs11.Attribute{
+		pkcs11.NewAttribute(pkcs11.CKA_LABEL, label),
 	}
 
-	return exec(f)
+	if err := h.api.FindObjectsInit(h.session, t); err != nil {
+		return ErrQueryFailure
+	}
+
+	// Get the first object that matches t
+	o, _, err := h.api.FindObjects(h.session, max)
+	if err != nil {
+		return ErrQueryFailure
+	}
+
+	// Clean up
+	if err = h.api.FindObjectsFinal(h.session); err != nil {
+		return ErrQueryFailure
+	}
+
+	// Display matching object
+	fmt.Printf("Found %d objects with label \"%s\"\n", len(o), label)
+	for i, obj := range o {
+		fmt.Printf("  Object %d:\n", i)
+		if err := h.displayObject(obj); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
-func FindObjectsByUUID(u uuid.UUID, max int) error {
-	var f = func(p *pkcs11.Ctx, s pkcs11.SessionHandle) error {
-		// Set the search parameters
-		t := []*pkcs11.Attribute{
-			pkcs11.NewAttribute(pkcs11.CKA_ID, []byte(u[0:])),
-		}
-
-		if err := p.FindObjectsInit(s, t); err != nil {
-			return ErrQueryFailure
-		}
-
-		// Get the first object that matches t
-		o, _, err := p.FindObjects(s, max)
-		if err != nil {
-			return ErrQueryFailure
-		}
-
-		// Clean up
-		if err = p.FindObjectsFinal(s); err != nil {
-			return ErrQueryFailure
-		}
-
-		// Display matching object
-		fmt.Printf("Found %d objects with UUID \"%s\"\n", len(o), u.String())
-		for i, obj := range o {
-			fmt.Printf("  Object %d:\n", i)
-			if err := displayObject(p, s, obj); err != nil {
-				return err
-			}
-		}
-
-		return nil
+func (h *HSM) FindObjectsByUUID(u uuid.UUID, max int) error {
+	// Set the search parameters
+	t := []*pkcs11.Attribute{
+		pkcs11.NewAttribute(pkcs11.CKA_ID, []byte(u[0:])),
 	}
 
-	return exec(f)
+	if err := h.api.FindObjectsInit(h.session, t); err != nil {
+		return ErrQueryFailure
+	}
+
+	// Get the first object that matches t
+	o, _, err := h.api.FindObjects(h.session, max)
+	if err != nil {
+		return ErrQueryFailure
+	}
+
+	// Clean up
+	if err = h.api.FindObjectsFinal(h.session); err != nil {
+		return ErrQueryFailure
+	}
+
+	// Display matching object
+	fmt.Printf("Found %d objects with UUID \"%s\"\n", len(o), u.String())
+	for i, obj := range o {
+		fmt.Printf("  Object %d:\n", i)
+		if err := h.displayObject(obj); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
-func CreateRootCAKey() error {
-	var f = func(p *pkcs11.Ctx, s pkcs11.SessionHandle) error {
-		// Private key settins
-		t := []*pkcs11.Attribute{
-			pkcs11.NewAttribute(pkcs11.CKA_CLASS, pkcs11.CKO_PRIVATE_KEY),
-			pkcs11.NewAttribute(pkcs11.CKA_KEY_TYPE, pkcs11.CKK_EC),
-			pkcs11.NewAttribute(pkcs11.CKA_TOKEN, true),
-			pkcs11.NewAttribute(pkcs11.CKA_PRIVATE, true),
-			pkcs11.NewAttribute(pkcs11.CKA_SENSITIVE, true),
-			pkcs11.NewAttribute(pkcs11.CKA_LABEL, CA_KEY_LABEL),
-			pkcs11.NewAttribute(pkcs11.CKA_ID, CA_KEY_UUID),
-			pkcs11.NewAttribute(pkcs11.CKA_SIGN, true),
-			pkcs11.NewAttribute(pkcs11.CKA_EXTRACTABLE, false),
-			// TODO: Add other required attributes
-		}
-
-		_, err := p.CreateObject(s, t)
-		if err != nil {
-			return ErrQueryFailure
-		}
-
-		return nil
+func (h *HSM) CreateRootCAKey() error {
+	// Private key settins
+	t := []*pkcs11.Attribute{
+		pkcs11.NewAttribute(pkcs11.CKA_CLASS, pkcs11.CKO_PRIVATE_KEY),
+		pkcs11.NewAttribute(pkcs11.CKA_KEY_TYPE, pkcs11.CKK_EC),
+		pkcs11.NewAttribute(pkcs11.CKA_TOKEN, true),
+		pkcs11.NewAttribute(pkcs11.CKA_PRIVATE, true),
+		pkcs11.NewAttribute(pkcs11.CKA_SENSITIVE, true),
+		pkcs11.NewAttribute(pkcs11.CKA_LABEL, CA_KEY_LABEL),
+		pkcs11.NewAttribute(pkcs11.CKA_ID, CA_KEY_UUID),
+		pkcs11.NewAttribute(pkcs11.CKA_SIGN, true),
+		pkcs11.NewAttribute(pkcs11.CKA_EXTRACTABLE, false),
+		// TODO: Add other required attributes
 	}
 
-	return exec(f)
+	_, err := h.api.CreateObject(h.session, t)
+	if err != nil {
+		return ErrQueryFailure
+	}
+
+	return nil
 }

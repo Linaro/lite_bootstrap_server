@@ -15,9 +15,15 @@ var hsmInfoCmd = &cobra.Command{
 	Short: "PKCS#11 Module Info",
 	Long:  `Display technical details of the PKCS#11 HSM interface being used.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		h, err := hsm.NewHSM()
+		if err != nil {
+			fmt.Printf("Error opening HSM: %s\n", err)
+			os.Exit(1)
+		}
+		defer h.Close()
 
 		// HSM Info
-		if err := hsm.DisplayHSMInfo(); err != nil {
+		if err = h.DisplayInfo(); err != nil {
 			if errors.Is(err, hsm.ErrQueryFailure) {
 				fmt.Println("Error trying to get module info from the PKCS#11 module.")
 				os.Exit(1)
@@ -28,7 +34,7 @@ var hsmInfoCmd = &cobra.Command{
 		}
 
 		// Token/Slot Info
-		if err := hsm.DisplaySlotInfo(); err != nil {
+		if err := h.DisplaySlotInfo(); err != nil {
 			if errors.Is(err, hsm.ErrQueryFailure) {
 				fmt.Println("Error trying to get slot 0 info from the PKCS#11 module.")
 				os.Exit(1)
@@ -65,12 +71,12 @@ var hsmInfoCmd = &cobra.Command{
 		// Search for the Root CA Key
 		// uuid, _ := uuid.Parse("8ce44ddc-eced-463b-b6e1-91efcbb25edb") // RSA
 		uuid, _ := uuid.Parse("90adf246-0d19-4726-ac22-35071c5c148b") // EC
-		if err := hsm.FindObjectsByUUID(uuid, 10); err != nil {
+		if err := h.FindObjectsByUUID(uuid, 10); err != nil {
 			fmt.Printf("Unhandled PKCS#11 error: %s\n", err)
 			os.Exit(1)
 		}
 
-		if err := hsm.FindObjectsByLabel("Test EC Key", 10); err != nil {
+		if err := h.FindObjectsByLabel("Test EC Key", 10); err != nil {
 			fmt.Printf("Unhandled PKCS#11 error: %s\n", err)
 			os.Exit(1)
 		}
@@ -82,7 +88,13 @@ var hsmCreateKeyCmd = &cobra.Command{
 	Short: "Create a PKCS#11 Keypair",
 	Long:  "Create a new pkcs#11 keypair",
 	Run: func(cmd *cobra.Command, args []string) {
-		err := hsm.CreateRootCAKey()
+		h, err := hsm.NewHSM()
+		if err != nil {
+			fmt.Printf("Error opening HSM: %s\n", err)
+			os.Exit(1)
+		}
+
+		err = h.CreateRootCAKey()
 		if err != nil {
 			fmt.Printf("pkcs#11 error: %s\n", err)
 			os.Exit(1)
