@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sync"
 
 	"github.com/google/uuid"
 	"github.com/miekg/pkcs11"
@@ -49,6 +50,7 @@ var caKeyUUID = []byte{0xd0, 0x61, 0x9e, 0x62, 0xdd, 0xa2, 0x43, 0xb4, 0xb5, 0x3
 type HSM struct {
 	api     *pkcs11.Ctx
 	session pkcs11.SessionHandle
+	lock    sync.Mutex
 }
 
 // NewHSM will attempt to connect to the configured HSM.  It will
@@ -112,6 +114,9 @@ func NewHSM() (*HSM, error) {
 
 // Close frees up the resources used by the pkcs 11 session.
 func (h *HSM) Close() error {
+	h.lock.Lock()
+	defer h.lock.Unlock()
+
 	err := h.api.Finalize()
 
 	// Free the resources associated, regardless of whether the
@@ -123,6 +128,9 @@ func (h *HSM) Close() error {
 
 // DisplayInfo show information about the current token.
 func (h *HSM) DisplayInfo() error {
+	h.lock.Lock()
+	defer h.lock.Unlock()
+
 	info, err := h.api.GetInfo()
 
 	if err != nil {
@@ -140,6 +148,9 @@ func (h *HSM) DisplayInfo() error {
 // DisplaySlotInfo shows information about what is in the selected
 // slot on the HSM.
 func (h *HSM) DisplaySlotInfo() error {
+	h.lock.Lock()
+	defer h.lock.Unlock()
+
 	sinfo, err := h.api.GetSessionInfo(h.session)
 	if err != nil {
 		return ErrQueryFailure
@@ -209,6 +220,9 @@ func (h *HSM) displayObject(o pkcs11.ObjectHandle) error {
 // FindObjectsByLabel searches the slot on the token for an object
 // that matches the specified label, and prints information about it.
 func (h *HSM) FindObjectsByLabel(label string, max int) error {
+	h.lock.Lock()
+	defer h.lock.Unlock()
+
 	// Set the search parameters
 	t := []*pkcs11.Attribute{
 		pkcs11.NewAttribute(pkcs11.CKA_LABEL, label),
@@ -244,6 +258,9 @@ func (h *HSM) FindObjectsByLabel(label string, max int) error {
 // FindObjectsByUUID search the slot on the token for an object with a
 // matching uuid to the one specified.
 func (h *HSM) FindObjectsByUUID(u uuid.UUID, max int) error {
+	h.lock.Lock()
+	defer h.lock.Unlock()
+
 	// Set the search parameters
 	t := []*pkcs11.Attribute{
 		pkcs11.NewAttribute(pkcs11.CKA_ID, []byte(u[0:])),
@@ -282,6 +299,9 @@ var p256Oid []byte = []byte{0x06, 0x08, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x03, 0x01
 
 // CreateRootCAKey generates an initial key pair, storing it on the token.
 func (h *HSM) CreateRootCAKey() error {
+	h.lock.Lock()
+	defer h.lock.Unlock()
+
 	// Private key settins
 	// t := []*pkcs11.Attribute{
 	// 	pkcs11.NewAttribute(pkcs11.CKA_CLASS, pkcs11.CKO_PRIVATE_KEY),
