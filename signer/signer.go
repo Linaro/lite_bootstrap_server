@@ -68,10 +68,10 @@ func NewSigningCert() (*SigningCert, error) {
 	// Determine the KeyID based on the sha1 of the marshalled
 	// public key.
 	pubBytes := elliptic.Marshal(privKey.Curve, privKey.X, privKey.Y)
-	keyId := sha1.Sum(pubBytes)
+	keyID := sha1.Sum(pubBytes)
 
-	ca.SubjectKeyId = keyId[:]
-	ca.AuthorityKeyId = keyId[:]
+	ca.SubjectKeyId = keyID[:]
+	ca.AuthorityKeyId = keyID[:]
 
 	// Self sign this key.
 	cert, err := x509.CreateCertificate(rand.Reader, ca, ca, &privKey.PublicKey, privKey)
@@ -85,6 +85,8 @@ func NewSigningCert() (*SigningCert, error) {
 	}, nil
 }
 
+// SignTemplate creates a certificate based off of the given signing
+// template.
 func (s *SigningCert) SignTemplate(template *x509.Certificate, pub interface{}) ([]byte, error) {
 	ecPub, ok := pub.(*ecdsa.PublicKey)
 	if !ok {
@@ -96,9 +98,9 @@ func (s *SigningCert) SignTemplate(template *x509.Certificate, pub interface{}) 
 	// x509 library, provided we're using a recent enough version
 	// of Go.
 	pubBytes := elliptic.Marshal(ecPub.Curve, ecPub.X, ecPub.Y)
-	keyId := sha1.Sum(pubBytes)
+	keyID := sha1.Sum(pubBytes)
 
-	template.SubjectKeyId = keyId[:]
+	template.SubjectKeyId = keyID[:]
 
 	return x509.CreateCertificate(rand.Reader, template, s.Cert,
 		pub, s.PrivateKey)

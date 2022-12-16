@@ -11,17 +11,37 @@ import (
 	"github.com/spf13/viper"
 )
 
-var ErrNoHSM = errors.New("no HSM configured")
-var ErrInvalidParam = errors.New("invalid input parameter")
-var ErrInvalidFilename = errors.New("invalid pkcs#11 module path/filename")
-var ErrInitFailure = errors.New("pkcs#11 module init failure")
-var ErrMissingSlot = errors.New("no slot defined")
-var ErrSessionFailure = errors.New("unable to open session with slot 0")
-var ErrLoginFailure = errors.New("unable to login to slot 0 with the specific pin")
-var ErrQueryFailure = errors.New("unable to execute the requested PKCS#11 api call")
+var (
+	// ErrNoHSM indicates that no HSM has been configured by the user.
+	ErrNoHSM = errors.New("no HSM configured")
 
-var CA_KEY_LABEL = "LITE Root CA"
-var CA_KEY_UUID = []byte{0xd0, 0x61, 0x9e, 0x62, 0xdd, 0xa2, 0x43, 0xb4, 0xb5, 0x3c, 0x85, 0x0b, 0x07, 0xf0, 0x78, 0x1c}
+	// ErrInvalidFilename indicates that the pkcs#11 module
+	// pathname is invalid.
+	ErrInvalidFilename = errors.New("invalid pkcs#11 module path/filename")
+
+	// ErrInitFailure indicates that we were unable to initialize
+	// the pkcs#11 module.
+	ErrInitFailure = errors.New("pkcs#11 module init failure")
+
+	// ErrMissingSlot indicates that the HSM does not have the
+	// appropriate slot for our keys.
+	ErrMissingSlot = errors.New("no slot defined")
+
+	// ErrSessionFailure indicates that we were unable to open a
+	// session with the HSM.
+	ErrSessionFailure = errors.New("unable to open session with slot 0")
+
+	// ErrLoginFailure indicates that the login with the hsm
+	// failed, likely because of an incorrect pin.
+	ErrLoginFailure = errors.New("unable to login to slot 0 with the specific pin")
+
+	// ErrQueryFailure indicates that there was an error when
+	// making a PKCS#11 api call.
+	ErrQueryFailure = errors.New("unable to execute the requested PKCS#11 api call")
+)
+
+var caKeyLabel = "LITE Root CA"
+var caKeyUUID = []byte{0xd0, 0x61, 0x9e, 0x62, 0xdd, 0xa2, 0x43, 0xb4, 0xb5, 0x3c, 0x85, 0x0b, 0x07, 0xf0, 0x78, 0x1c}
 
 // An HSM manages a session to a single HSM instance.  Generally,
 // there will only be a single of these instances for a given
@@ -101,6 +121,7 @@ func (h *HSM) Close() error {
 	return err
 }
 
+// DisplayInfo show information about the current token.
 func (h *HSM) DisplayInfo() error {
 	info, err := h.api.GetInfo()
 
@@ -116,6 +137,8 @@ func (h *HSM) DisplayInfo() error {
 	return nil
 }
 
+// DisplaySlotInfo shows information about what is in the selected
+// slot on the HSM.
 func (h *HSM) DisplaySlotInfo() error {
 	sinfo, err := h.api.GetSessionInfo(h.session)
 	if err != nil {
@@ -183,6 +206,8 @@ func (h *HSM) displayObject(o pkcs11.ObjectHandle) error {
 	return nil
 }
 
+// FindObjectsByLabel searches the slot on the token for an object
+// that matches the specified label, and prints information about it.
 func (h *HSM) FindObjectsByLabel(label string, max int) error {
 	// Set the search parameters
 	t := []*pkcs11.Attribute{
@@ -216,6 +241,8 @@ func (h *HSM) FindObjectsByLabel(label string, max int) error {
 	return nil
 }
 
+// FindObjectsByUUID search the slot on the token for an object with a
+// matching uuid to the one specified.
 func (h *HSM) FindObjectsByUUID(u uuid.UUID, max int) error {
 	// Set the search parameters
 	t := []*pkcs11.Attribute{
@@ -253,6 +280,7 @@ func (h *HSM) FindObjectsByUUID(u uuid.UUID, max int) error {
 // $ openssl ecparam --name prime256v1 -outform DER | hexdump -C
 var p256Oid []byte = []byte{0x06, 0x08, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x03, 0x01, 0x07}
 
+// CreateRootCAKey generates an initial key pair, storing it on the token.
 func (h *HSM) CreateRootCAKey() error {
 	// Private key settins
 	// t := []*pkcs11.Attribute{
@@ -261,8 +289,8 @@ func (h *HSM) CreateRootCAKey() error {
 	// 	pkcs11.NewAttribute(pkcs11.CKA_TOKEN, true),
 	// 	pkcs11.NewAttribute(pkcs11.CKA_PRIVATE, true),
 	// 	pkcs11.NewAttribute(pkcs11.CKA_SENSITIVE, true),
-	// 	pkcs11.NewAttribute(pkcs11.CKA_LABEL, CA_KEY_LABEL),
-	// 	pkcs11.NewAttribute(pkcs11.CKA_ID, CA_KEY_UUID),
+	// 	pkcs11.NewAttribute(pkcs11.CKA_LABEL, caKeyLabel),
+	// 	pkcs11.NewAttribute(pkcs11.CKA_ID, caKeyUUID),
 	// 	pkcs11.NewAttribute(pkcs11.CKA_SIGN, true),
 	// 	pkcs11.NewAttribute(pkcs11.CKA_EXTRACTABLE, false),
 	// 	// TODO: Add other required attributes

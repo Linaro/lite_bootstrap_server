@@ -8,12 +8,14 @@ import (
 	"github.com/spf13/viper"
 )
 
-type CloudService interface {
+// A Service describes how to interact in a general way with the
+// supported cloud services.
+type Service interface {
 	Register(device string) error
 }
 
 // GetService retrieves a service with a given name.
-func GetService(name string) (CloudService, error) {
+func GetService(name string) (Service, error) {
 	if name == "azure-cli" {
 		return &azureService{}, nil
 	} else if name == "none" {

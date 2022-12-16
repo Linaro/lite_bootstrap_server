@@ -49,7 +49,7 @@ func handleConnection(c net.Conn) {
 	c.Close()
 }
 
-// Starts a TCP server with mTLS authentication
+// StartTCP starts a TCP server with mTLS authentication
 func StartTCP(hostname string, port int16) {
 	// Create a certificate pool with the CA certificate
 	certPool := x509.NewCertPool()
